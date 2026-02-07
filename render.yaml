@@ -1,0 +1,39 @@
+services:
+  # Backend Service (Docker)
+  - type: web
+    name: picklepro-backend
+    env: docker
+    region: singapore
+    plan: free
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_DATA_MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: ADMIN_EMAILS
+        sync: false
+      - key: CORS_ORIGINS
+        fromService:
+          type: web
+          name: picklepro-frontend
+          property: url
+
+  # Frontend Service (Static Site)
+  - type: web
+    name: picklepro-frontend
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npm run preview
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: picklepro-backend
+          property: url
