@@ -20,12 +20,12 @@ services:
       - key: CORS_ORIGINS
         fromService:
           type: web
-          name: picklepro-frontend
+          name: picklepro-ui
           property: host
 
   # Frontend Service (Static Site)
   - type: web
-    name: picklepro-frontend
+    name: picklepro-ui
     env: node
     region: singapore
     plan: free

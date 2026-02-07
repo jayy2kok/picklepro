@@ -25,7 +25,7 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: picklepro-frontend
+    container_name: picklepro-ui
     ports:
       - "3000:80"
     environment:

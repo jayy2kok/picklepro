@@ -39,6 +39,6 @@ You will see a form asking for the following:
 
 ## Accessing Your App
 
-*   Click on the **picklepro-frontend** service in your dashboard.
-*   Click the URL provided (e.g., `https://picklepro-frontend.onrender.com`).
+*   Click on the **picklepro-ui** service in your dashboard.
+*   Click the URL provided (e.g., `https://picklepro-ui.onrender.com`).
 *   Your app is now live!
