@@ -8,7 +8,7 @@ spring:
   mongodb:
     uri: ${SPRING_DATA_MONGODB_URI}
 server:
-  port: 8080
+  port: ${PORT:8080}
   servlet:
     context-path: /
 
