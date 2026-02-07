@@ -37,3 +37,5 @@ services:
           type: web
           name: picklepro-backend
           property: host
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
