@@ -21,7 +21,7 @@ services:
         fromService:
           type: web
           name: picklepro-frontend
-          property: url
+          property: host
 
   # Frontend Service (Static Site)
   - type: web
@@ -36,4 +36,4 @@ services:
         fromService:
           type: web
           name: picklepro-backend
-          property: url
+          property: host

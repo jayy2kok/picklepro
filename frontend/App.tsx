@@ -6,7 +6,7 @@ import MatchForm from './components/MatchForm';
 import MatchList from './components/MatchList';
 import StatsDashboard from './components/StatsDashboard';
 import PlayerManager from './components/PlayerManager';
-import { Icons } from './constants';
+import { Icons, API_URL } from './constants';
 
 const MATCHES_KEY = 'picklepro_matches';
 const PLAYERS_KEY = 'picklepro_players';
@@ -91,7 +91,7 @@ const App: React.FC = () => {
 
     try {
       const token = localStorage.getItem('picklepro_token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/matches/${id}`, {
+      const response = await fetch(`${API_URL}/api/matches/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { User } from '../types';
+import { API_URL } from '../constants';
 
 interface AuthOverlayProps {
   onLogin: (user: User) => void;
@@ -21,8 +22,7 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLogin }) => {
     setError(null);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-      const response = await fetch(`${apiUrl}/v1/auth/google`, {
+      const response = await fetch(`${API_URL}/v1/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken: credentialResponse.credential })

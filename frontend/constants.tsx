@@ -7,6 +7,15 @@ export const COLORS = {
   accent: '#3b82f6', // Blue 500
 };
 
+// Helper to ensure API URL has protocol
+const getApiUrl = () => {
+  const url = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  if (url.startsWith('http')) return url;
+  return `https://${url}`;
+};
+
+export const API_URL = getApiUrl();
+
 export const Icons = {
   Trophy: ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
