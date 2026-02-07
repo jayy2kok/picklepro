@@ -1,0 +1,19 @@
+#!/bin/sh
+# Maven Wrapper - Downloads and runs Maven if not present
+# Licensed to the Apache Software Foundation
+
+set -e
+
+if [ -z "$MAVEN_HOME" ]; then
+  MAVEN_HOME="${HOME}/.m2/wrapper/dists/apache-maven-3.9.6-bin"
+fi
+
+MAVEN_CMD="${MAVEN_HOME}/bin/mvn"
+
+if [ ! -f "$MAVEN_CMD" ]; then
+  echo "Downloading Maven 3.9.6..."
+  mkdir -p "$MAVEN_HOME"
+  curl -fsSL "https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz" | tar xz -C "$MAVEN_HOME" --strip-components=1
+fi
+
+exec "$MAVEN_CMD" "$@"

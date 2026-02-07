@@ -1,0 +1,209 @@
+
+openapi: 3.0.0
+info:
+  title: PicklePro Tracker API
+  description: Backend services for the Reactive Pickleball Match Tracker application.
+  version: 1.0.0
+servers:
+  - url: https://api.picklepro.com/v1
+    description: Production server
+  - url: http://localhost:8080/v1
+    description: Local development
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        picture:
+          type: string
+          format: uri
+
+    Player:
+      type: object
+      required:
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          example: "Alex Pickle"
+        joinedDate:
+          type: string
+          format: date-time
+          readOnly: true
+
+    Match:
+      type: object
+      required:
+        - date
+        - type
+        - teamA
+        - teamB
+        - scoreA
+        - scoreB
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        date:
+          type: string
+          format: date-time
+        type:
+          type: string
+          enum: [Singles, Doubles]
+        teamA:
+          type: array
+          items:
+            type: string
+          description: List of player names or IDs in Team A
+        teamB:
+          type: array
+          items:
+            type: string
+          description: List of player names or IDs in Team B
+        scoreA:
+          type: integer
+          minimum: 0
+        scoreB:
+          type: integer
+          minimum: 0
+        location:
+          type: string
+          example: "Central Park Courts"
+        notes:
+          type: string
+        userId:
+          type: string
+          format: uuid
+          readOnly: true
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/google:
+    post:
+      summary: Exchange Google ID Token for Session/JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idToken:
+                  type: string
+      responses:
+        '200':
+          description: Successfully authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+
+  /players:
+    get:
+      summary: Get all players for the authenticated user
+      responses:
+        '200':
+          description: A list of players
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Player'
+    post:
+      summary: Add a new player to the roster
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Player'
+      responses:
+        '201':
+          description: Player created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Player'
+
+  /players/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      summary: Delete a player
+      responses:
+        '204':
+          description: Player deleted
+
+  /matches:
+    get:
+      summary: Get match history for the authenticated user
+      responses:
+        '200':
+          description: A list of matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Match'
+    post:
+      summary: Record a new match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Match'
+      responses:
+        '201':
+          description: Match recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Match'
+
+  /matches/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      summary: Delete a match record
+      responses:
+        '204':
+          description: Match deleted

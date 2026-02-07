@@ -1,0 +1,48 @@
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Frontend (Node.js / React)
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/coverage/
+frontend/.npm/
+frontend/*.log
+frontend/.DS_Store
+
+# Backend (Java / Spring Boot)
+backend/target/
+backend/*.class
+backend/bin/
+backend/.settings/
+backend/.classpath
+backend/.project
+backend/.factorypath
+backend/logs/
+
+# Java Build Tools - Keep Wrappers
+!.mvn/wrapper/maven-wrapper.jar
+!backend/mvnw
+!backend/mvnw.cmd
+
+# IDE - IntelliJ / Eclipse / VS Code
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Docker
+docker-compose.override.yml
+.docker-volumes/
+
+# OS Files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini

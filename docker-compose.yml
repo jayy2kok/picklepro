@@ -1,0 +1,59 @@
+services:
+  backend:
+    build: ./backend
+    container_name: picklepro-backend
+    ports:
+      - "8080:8080"
+    environment:
+      # All possible MongoDB URI formats
+      - SPRING_DATA_MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - ADMIN_EMAILS=${ADMIN_EMAILS}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+    # depends_on:
+    #   mongo:
+    #     condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - picklepro-network
+
+  frontend:
+    build: ./frontend
+    container_name: picklepro-frontend
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=http://localhost:8080
+    depends_on:
+      - backend
+    networks:
+      - picklepro-network
+  # mongo:
+  #   image: mongo:7
+  #   container_name: picklepro-mongo
+  #   ports:
+  #     - "27017:27017"
+  #   volumes:
+  #     - mongo-data:/data/db
+  #   healthcheck:
+  #     test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
+  #   networks:
+  #     - picklepro-network
+
+volumes:
+  mongo-data:
+
+
+networks:
+  picklepro-network:
+    driver: bridge
