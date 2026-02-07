@@ -30,6 +30,9 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+  health:
+    mongodb:
+      enabled: false  # Using custom health indicator for Atlas compatibility
 
 picklepro:
   admin-emails: ${ADMIN_EMAILS}
