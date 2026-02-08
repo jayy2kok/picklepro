@@ -11,5 +11,7 @@ public interface PlayerRepository extends MongoRepository<Player, String> {
 
     List<Player> findByUserId(String userId);
 
+    java.util.Optional<Player> findByEmail(String email);
+
     void deleteByIdAndUserId(String id, String userId);
 }

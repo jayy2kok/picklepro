@@ -31,11 +31,11 @@ export const playersApi = {
         return handleResponse<Player[]>(response);
     },
 
-    create: async (name: string): Promise<Player> => {
+    create: async (playerData: Partial<Player>): Promise<Player> => {
         const response = await fetch(`${API_URL}/v1/players`, {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify({ name })
+            body: JSON.stringify(playerData)
         });
         return handleResponse<Player>(response);
     },
@@ -46,6 +46,15 @@ export const playersApi = {
             headers: getAuthHeaders()
         });
         return handleResponse<void>(response);
+    },
+
+    update: async (id: string, data: Partial<Player>): Promise<Player> => {
+        const response = await fetch(`${API_URL}/v1/players/${id}`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        return handleResponse<Player>(response);
     }
 };
 

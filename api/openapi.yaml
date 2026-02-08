@@ -5,7 +5,7 @@ info:
   description: Backend services for the Reactive Pickleball Match Tracker application.
   version: 1.0.0
 servers:
-  - url: https://api.picklepro.com/v1
+  - url: https://picklepro-backend.onrender.com/v1
     description: Production server
   - url: http://localhost:8080/v1
     description: Local development
@@ -33,6 +33,25 @@ components:
           type: string
           format: uri
 
+    SocialMedia:
+      type: object
+      properties:
+        linkedin:
+          type: string
+          format: uri
+        x:
+          type: string
+          format: uri
+        instagram:
+          type: string
+          format: uri
+        facebook:
+          type: string
+          format: uri
+        youtube:
+          type: string
+          format: uri
+
     Player:
       type: object
       required:
@@ -45,6 +64,16 @@ components:
         name:
           type: string
           example: "Alex Pickle"
+        email:
+          type: string
+          format: email
+          description: "Player's email address. Used for linking to User account."
+        contactNumber:
+          type: string
+          example: "+1-555-010-9988"
+
+        socialMedia:
+          $ref: '#/components/schemas/SocialMedia'
         joinedDate:
           type: string
           format: date-time
@@ -161,6 +190,29 @@ paths:
         required: true
         schema:
           type: string
+    put:
+      summary: Update a player profile
+      description: |
+        Update player details. 
+        - ADMINs can update any player.
+        - VIEWERS can only update the player associated with their email address.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Player'
+      responses:
+        '200':
+          description: Player updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Player'
+        '403':
+          description: Forbidden - User not authorized to update this player
+        '404':
+          description: Player not found
     delete:
       summary: Delete a player
       responses:

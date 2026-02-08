@@ -6,6 +6,7 @@ import MatchForm from './components/MatchForm';
 import MatchList from './components/MatchList';
 import StatsDashboard from './components/StatsDashboard';
 import PlayerManager from './components/PlayerManager';
+import ProfileEditor from './components/ProfileEditor';
 import { Icons } from './constants';
 import { playersApi, matchesApi } from './api';
 
@@ -22,7 +23,7 @@ const App: React.FC = () => {
     (localStorage.getItem(THEME_KEY) as 'light' | 'dark') || 'light'
   );
   const [showForm, setShowForm] = useState(false);
-  const [activeTab, setActiveTab] = useState<'stats' | 'history' | 'players'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'history' | 'players' | 'profile'>('stats');
   const [error, setError] = useState<string | null>(null);
 
   // Load data from API
@@ -80,14 +81,28 @@ const App: React.FC = () => {
     localStorage.removeItem('picklepro_token');
   };
 
-  const handleAddPlayer = async (name: string) => {
+  const handleAddPlayer = async (playerData: Partial<Player>) => {
     try {
       setError(null);
-      const newPlayer = await playersApi.create(name);
+      const newPlayer = await playersApi.create(playerData);
       setState(prev => ({ ...prev, players: [...prev.players, newPlayer] }));
     } catch (err) {
       console.error('Failed to add player:', err);
       setError('Failed to add player. Please try again.');
+    }
+  };
+
+  const handleUpdatePlayer = async (id: string, playerData: Partial<Player>) => {
+    try {
+      setError(null);
+      const updatedPlayer = await playersApi.update(id, playerData);
+      setState(prev => ({
+        ...prev,
+        players: prev.players.map(p => p.id === id ? updatedPlayer : p)
+      }));
+    } catch (err) {
+      console.error('Failed to update player:', err);
+      setError('Failed to update player. Please try again.');
     }
   };
 
@@ -189,7 +204,7 @@ const App: React.FC = () => {
             </h1>
           </div>
           <div className="flex gap-2 p-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm">
-            {['stats', 'history', 'players'].map((tab) => (
+            {['stats', 'history', 'players', 'profile'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
@@ -207,7 +222,26 @@ const App: React.FC = () => {
           <div className="animate-in fade-in duration-300">
             {activeTab === 'stats' && <StatsDashboard matches={state.matches} userName={state.user.name} />}
             {activeTab === 'history' && <MatchList matches={state.matches} onDelete={handleDeleteMatch} readOnly={state.user.role !== 'ADMIN'} />}
-            {activeTab === 'players' && <PlayerManager players={state.players} onAddPlayer={handleAddPlayer} onRemovePlayer={handleRemovePlayer} readOnly={state.user.role !== 'ADMIN'} />}
+            {activeTab === 'players' && <PlayerManager players={state.players} onAddPlayer={handleAddPlayer} onUpdatePlayer={handleUpdatePlayer} onRemovePlayer={handleRemovePlayer} readOnly={state.user.role !== 'ADMIN'} />}
+            {activeTab === 'profile' && (
+              <ProfileEditor
+                player={state.players.find(p => p.email === state.user?.email)}
+                user={state.user}
+                onSave={(updatedPlayer) => {
+                  setState(prev => ({
+                    ...prev,
+                    players: prev.players.map(p => p.id === updatedPlayer.id ? updatedPlayer : p)
+                  }));
+                  // If new player was created (not in list), add it
+                  if (!state.players.find(p => p.id === updatedPlayer.id)) {
+                    setState(prev => ({ ...prev, players: [...prev.players, updatedPlayer] }));
+                  }
+                  // Optional: switch back to stats or show success message
+                  alert('Profile saved successfully!');
+                }}
+                onCancel={() => setActiveTab('stats')}
+              />
+            )}
           </div>
         )}
       </main>

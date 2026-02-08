@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 
 import jakarta.validation.constraints.NotBlank;
 import java.time.Instant;
+import java.util.Map;
 
 @Data
 @Builder
@@ -24,6 +25,13 @@ public class Player {
 
     @NotBlank(message = "Player name is required")
     private String name;
+
+    @Indexed
+    private String email;
+
+    private String contactNumber;
+
+    private Map<String, String> socialMedia;
 
     @CreatedDate
     private Instant joinedDate;

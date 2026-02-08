@@ -4,6 +4,15 @@ export type MatchType = 'Singles' | 'Doubles';
 export interface Player {
   id: string;
   name: string;
+  email?: string;
+  contactNumber?: string;
+  socialMedia?: {
+    linkedin?: string;
+    x?: string;
+    instagram?: string;
+    facebook?: string;
+    youtube?: string;
+  };
   joinedDate: string;
 }
 
