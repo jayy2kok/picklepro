@@ -13,5 +13,7 @@ public interface MatchRepository extends MongoRepository<Match, String> {
 
     List<Match> findByUserIdOrderByDateDesc(String userId);
 
+    List<Match> findAllByOrderByDateDesc();
+
     void deleteByIdAndUserId(String id, String userId);
 }

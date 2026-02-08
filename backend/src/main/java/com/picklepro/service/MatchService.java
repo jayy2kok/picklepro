@@ -15,8 +15,8 @@ public class MatchService {
 
     private final MatchRepository matchRepository;
 
-    public List<Match> getMatchesForUser(String userId) {
-        return matchRepository.findByUserIdOrderByDateDesc(userId);
+    public List<Match> getAllMatches() {
+        return matchRepository.findAllByOrderByDateDesc();
     }
 
     public Match createMatch(Match match, String userId) {

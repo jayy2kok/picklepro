@@ -18,8 +18,8 @@ public class PlayerService {
 
     private final PlayerRepository playerRepository;
 
-    public List<Player> getPlayersForUser(String userId) {
-        return playerRepository.findByUserId(userId);
+    public List<Player> getAllPlayers() {
+        return playerRepository.findAll();
     }
 
     public Player createPlayer(Player player, String userId) {

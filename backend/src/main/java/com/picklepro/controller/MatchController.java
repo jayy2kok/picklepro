@@ -21,8 +21,8 @@ public class MatchController {
     private final MatchService matchService;
 
     @GetMapping
-    public ResponseEntity<List<Match>> getMatches(@AuthenticationPrincipal User user) {
-        List<Match> matches = matchService.getMatchesForUser(user.getId());
+    public ResponseEntity<List<Match>> getMatches() {
+        List<Match> matches = matchService.getAllMatches();
         return ResponseEntity.ok(matches);
     }
 

@@ -21,8 +21,8 @@ public class PlayerController {
     private final PlayerService playerService;
 
     @GetMapping
-    public ResponseEntity<List<Player>> getPlayers(@AuthenticationPrincipal User user) {
-        List<Player> players = playerService.getPlayersForUser(user.getId());
+    public ResponseEntity<List<Player>> getPlayers() {
+        List<Player> players = playerService.getAllPlayers();
         return ResponseEntity.ok(players);
     }
 
