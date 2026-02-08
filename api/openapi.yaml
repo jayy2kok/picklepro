@@ -71,6 +71,11 @@ components:
         contactNumber:
           type: string
           example: "+1-555-010-9988"
+        rating:
+          type: number
+          format: double
+          example: 3.5
+          description: "Player skill rating (e.g. 2.5 to 5.0). Default is 3.5."
 
         socialMedia:
           $ref: '#/components/schemas/SocialMedia'
@@ -115,15 +120,136 @@ components:
         scoreB:
           type: integer
           minimum: 0
-        location:
+        venueId:
           type: string
-          example: "Central Park Courts"
+          format: uuid
+          description: "Reference to the Venue where the match was played"
+        courtNumber:
+          type: integer
+          minimum: 1
+          description: "Court number where the match was played"
         notes:
           type: string
         userId:
           type: string
           format: uuid
           readOnly: true
+
+    Venue:
+      type: object
+      required:
+        - name
+        - courtCount
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          example: "Downtown Pickleball Center"
+        location:
+          type: string
+          example: "123 Main St, Springfield"
+        courtCount:
+          type: integer
+          minimum: 1
+          example: 4
+          description: "Number of courts available at this venue."
+
+    TournamentMatch:
+      type: object
+      required:
+        - teamA
+        - teamB
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        tournamentId:
+          type: string
+          format: uuid
+        round:
+          type: integer
+          description: "Round number (1, 2, 3...) or 0 for Group Stage."
+        courtNumber:
+          type: integer
+          description: "The court number assigned (1 to Venue.courtCount)"
+        startTime:
+          type: string
+          format: date-time
+        teamA:
+          type: array
+          items:
+            type: string
+          description: "List of Player IDs"
+        teamB:
+          type: array
+          items:
+            type: string
+          description: "List of Player IDs"
+        scoreA:
+          type: integer
+        scoreB:
+          type: integer
+        status:
+          type: string
+          enum: [SCHEDULED, IN_PROGRESS, COMPLETED]
+        winnerTeam:
+          type: string
+          enum: [A, B]
+
+    Tournament:
+      type: object
+      required:
+        - name
+        - type
+        - format
+        - venueId
+        - startDate
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          example: "Spring 2026 Championship"
+        type:
+          type: string
+          enum: [ELIMINATION, LEAGUE]
+          description: "Elimination (Bracket) or League (Round Robin)."
+        format:
+          type: string
+          enum: [SINGLES, DOUBLES]
+        venueId:
+          type: string
+          format: uuid
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        intervalMinutes:
+          type: integer
+          default: 30
+          description: "Duration of matches + transition time."
+        participants:
+          type: array
+          items:
+            type: string
+          description: "List of Player IDs registered for the tournament."
+        matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/TournamentMatch'
+          readOnly: true
+        status:
+          type: string
+          enum: [DRAFT, PUBLISHED, COMPLETED]
+          default: DRAFT
 
 security:
   - bearerAuth: []
@@ -257,5 +383,169 @@ paths:
     delete:
       summary: Delete a match record
       responses:
-        '204':
           description: Match deleted
+
+  /venues:
+    get:
+      summary: List all venues
+      responses:
+        '200':
+          description: List of venues
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Venue'
+    post:
+      summary: Create a new venue
+      security:
+        - bearerAuth: [] 
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Venue'
+      responses:
+        '201':
+          description: Venue created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Venue'
+
+  /venues/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      summary: Update a venue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Venue'
+      responses:
+        '200':
+          description: Venue updated
+    delete:
+      summary: Delete a venue
+      responses:
+        '204':
+          description: Venue deleted
+
+  /tournaments:
+    get:
+      summary: List all tournaments
+      responses:
+        '200':
+          description: List of tournaments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tournament'
+    post:
+      summary: Create a tournament
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tournament'
+      responses:
+        '201':
+          description: Tournament created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tournament'
+
+  /tournaments/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get tournament details
+      responses:
+        '200':
+          description: Tournament details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tournament'
+    put:
+      summary: Update tournament details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tournament'
+      responses:
+        '200':
+          description: Tournament updated
+    delete:
+      summary: Delete tournament
+      responses:
+        '204':
+          description: Tournament deleted
+
+  /tournaments/{id}/generate-schedule:
+    post:
+      summary: Generate tournament schedule
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Schedule generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tournament'
+
+  /tournaments/{id}/matches/{matchId}/score:
+    put:
+      summary: Update match score
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scoreA:
+                  type: integer
+                scoreB:
+                  type: integer
+      responses:
+        '200':
+          description: Score updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentMatch'

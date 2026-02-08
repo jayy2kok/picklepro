@@ -93,7 +93,7 @@ const StatsDashboard: React.FC<StatsDashboardProps> = ({ matches, userName }) =>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">Player Standings</h3>
           <div className="flex items-center gap-2">
-            <button 
+            <button
               disabled={currentPage === 1}
               onClick={() => setCurrentPage(p => p - 1)}
               className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 transition-colors"
@@ -103,7 +103,7 @@ const StatsDashboard: React.FC<StatsDashboardProps> = ({ matches, userName }) =>
             <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
               Page {currentPage} of {totalPages}
             </span>
-            <button 
+            <button
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage(p => p + 1)}
               className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 transition-colors"
@@ -118,6 +118,7 @@ const StatsDashboard: React.FC<StatsDashboardProps> = ({ matches, userName }) =>
             <thead>
               <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 text-xs uppercase font-bold">
                 <th className="pb-4 pl-2">Name</th>
+                <th className="pb-4 text-center">Rating</th>
                 <th className="pb-4 text-center">Matches</th>
                 <th className="pb-4 text-center">Avg Score</th>
                 <th className="pb-4 text-center">Defense</th>
@@ -126,8 +127,8 @@ const StatsDashboard: React.FC<StatsDashboardProps> = ({ matches, userName }) =>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
               {paginatedStats.map(s => (
-                <tr 
-                  key={s.name} 
+                <tr
+                  key={s.name}
                   onClick={() => setActivePlayerName(s.name)}
                   className={`group hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-all ${activePlayerName === s.name ? 'bg-lime-50/50 dark:bg-lime-900/10' : ''}`}
                 >
@@ -135,6 +136,7 @@ const StatsDashboard: React.FC<StatsDashboardProps> = ({ matches, userName }) =>
                     {activePlayerName === s.name && <div className="w-1.5 h-1.5 rounded-full bg-lime-500"></div>}
                     {s.name}
                   </td>
+                  <td className="py-4 text-center text-slate-500 dark:text-slate-400">{matches.find(m => m.teamA.includes(s.name) || m.teamB.includes(s.name)) ? (matches.find(m => m.teamA.includes(s.name) || m.teamB.includes(s.name)) as any).rating || 1200 : 1200}</td>
                   <td className="py-4 text-center text-slate-500 dark:text-slate-400">{s.matchesPlayed}</td>
                   <td className="py-4 text-center text-lime-600 dark:text-lime-400 font-bold">{s.avgPointsFor.toFixed(1)}</td>
                   <td className="py-4 text-center text-slate-400 dark:text-slate-600">{s.avgPointsAgainst.toFixed(1)}</td>
@@ -181,9 +183,9 @@ const StatsDashboard: React.FC<StatsDashboardProps> = ({ matches, userName }) =>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                <Tooltip 
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                <Tooltip
                   contentStyle={{ borderRadius: '12px', border: 'none', backgroundColor: '#1e293b', color: '#f8fafc', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.5)' }}
                   cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                 />

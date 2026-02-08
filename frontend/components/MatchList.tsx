@@ -1,15 +1,16 @@
 
 import React from 'react';
-import { Match } from '../types';
+import { Match, Venue } from '../types';
 import { Icons } from '../constants';
 
 interface MatchListProps {
   matches: Match[];
+  venues: Venue[];
   onDelete?: (id: string) => void;
   readOnly?: boolean;
 }
 
-const MatchList: React.FC<MatchListProps> = ({ matches, onDelete, readOnly }) => {
+const MatchList: React.FC<MatchListProps> = ({ matches, venues, onDelete, readOnly }) => {
   if (matches.length === 0) return (
     <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800">
       <p className="text-slate-400 dark:text-slate-600 font-medium">No match history found.</p>
@@ -42,10 +43,15 @@ const MatchList: React.FC<MatchListProps> = ({ matches, onDelete, readOnly }) =>
                 </p>
               </div>
               <div>
-                <h4 className="font-bold text-slate-900 dark:text-white truncate max-w-[150px]">{match.location || 'Unknown Court'}</h4>
+                <h4 className="font-bold text-slate-900 dark:text-white truncate max-w-[180px]">
+                  {match.venueId
+                    ? `${venues.find(v => v.id === match.venueId)?.name || 'Venue'}${match.courtNumber ? ` - Court ${match.courtNumber}` : ''}`
+                    : 'Match'
+                  }
+                </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                   <Icons.Calendar className="w-3 h-3" />
-                  {new Date(match.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(match.date).toLocaleDateString()}
                 </p>
               </div>
             </div>

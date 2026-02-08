@@ -14,6 +14,14 @@ export interface Player {
     youtube?: string;
   };
   joinedDate: string;
+  rating?: number;
+}
+
+export interface Venue {
+  id: string;
+  name: string;
+  location: string;
+  courtCount: number;
 }
 
 export interface Match {
@@ -24,7 +32,8 @@ export interface Match {
   teamB: string[];
   scoreA: number;
   scoreB: number;
-  location: string;
+  venueId?: string;
+  courtNumber?: number;
   notes?: string;
   userId: string;
 }

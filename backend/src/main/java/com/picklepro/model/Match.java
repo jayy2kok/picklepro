@@ -41,9 +41,11 @@ public class Match {
     @Min(value = 0, message = "Score must be non-negative")
     private int scoreB;
 
-    private String location;
-
     private String notes;
+
+    private String venueId;
+
+    private Integer courtNumber;
 
     @Indexed
     private String userId;

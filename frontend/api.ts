@@ -1,4 +1,4 @@
-import { Player, Match } from './types';
+import { Player, Match, Venue } from './types';
 
 const API_URL = (() => {
     const url = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -78,6 +78,41 @@ export const matchesApi = {
 
     delete: async (id: string): Promise<void> => {
         const response = await fetch(`${API_URL}/v1/matches/${id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+        return handleResponse<void>(response);
+    }
+};
+
+export const venuesApi = {
+    getAll: async (): Promise<Venue[]> => {
+        const response = await fetch(`${API_URL}/v1/venues`, {
+            headers: getAuthHeaders()
+        });
+        return handleResponse<Venue[]>(response);
+    },
+
+    create: async (venue: Omit<Venue, 'id'>): Promise<Venue> => {
+        const response = await fetch(`${API_URL}/v1/venues`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(venue)
+        });
+        return handleResponse<Venue>(response);
+    },
+
+    update: async (id: string, venue: Partial<Venue>): Promise<Venue> => {
+        const response = await fetch(`${API_URL}/v1/venues/${id}`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(venue)
+        });
+        return handleResponse<Venue>(response);
+    },
+
+    delete: async (id: string): Promise<void> => {
+        const response = await fetch(`${API_URL}/v1/venues/${id}`, {
             method: 'DELETE',
             headers: getAuthHeaders()
         });

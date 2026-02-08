@@ -1,6 +1,7 @@
 
-import React, { useState, useMemo } from 'react';
-import { Match, MatchType, Player } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Match, MatchType, Player, Venue } from '../types';
+import { venuesApi } from '../api';
 
 interface MatchFormProps {
   players: Player[];
@@ -16,13 +17,29 @@ const MatchForm: React.FC<MatchFormProps> = ({ players, matches, onSave, onCance
   const [scoreA, setScoreA] = useState<number>(0);
   const [scoreB, setScoreB] = useState<number>(0);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [location, setLocation] = useState('');
+  const [venueId, setVenueId] = useState('');
+  const [courtNumber, setCourtNumber] = useState<number>(1);
   const [notes, setNotes] = useState('');
+  const [venues, setVenues] = useState<Venue[]>([]);
+  const [isLoadingVenues, setIsLoadingVenues] = useState(true);
 
-  const previousLocations = useMemo(() => {
-    const locations = matches.map(m => m.location).filter(l => l && l.trim() !== '');
-    return Array.from(new Set(locations));
-  }, [matches]);
+  useEffect(() => {
+    const loadVenues = async () => {
+      try {
+        const data = await venuesApi.getAll();
+        setVenues(data);
+      } catch (err) {
+        console.error('Failed to load venues:', err);
+      } finally {
+        setIsLoadingVenues(false);
+      }
+    };
+    loadVenues();
+  }, []);
+
+  const selectedVenue = useMemo(() => {
+    return venues.find(v => v.id === venueId);
+  }, [venues, venueId]);
 
   const selectedPlayerNames = useMemo(() => {
     const list = [teamA[0], teamB[0]];
@@ -51,7 +68,7 @@ const MatchForm: React.FC<MatchFormProps> = ({ players, matches, onSave, onCance
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (hasDuplicates) return;
-    
+
     onSave({
       date: new Date(date).toISOString(),
       type,
@@ -59,7 +76,8 @@ const MatchForm: React.FC<MatchFormProps> = ({ players, matches, onSave, onCance
       teamB: type === 'Singles' ? [teamB[0]] : teamB,
       scoreA,
       scoreB,
-      location,
+      venueId: venueId || undefined,
+      courtNumber: venueId ? courtNumber : undefined,
       notes
     });
   };
@@ -72,14 +90,14 @@ const MatchForm: React.FC<MatchFormProps> = ({ players, matches, onSave, onCance
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Record Match</h2>
         <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
-          <button 
+          <button
             type="button"
             onClick={() => setType('Singles')}
             className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${type === 'Singles' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500'}`}
           >
             Singles
           </button>
-          <button 
+          <button
             type="button"
             onClick={() => setType('Doubles')}
             className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${type === 'Doubles' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500'}`}
@@ -99,44 +117,59 @@ const MatchForm: React.FC<MatchFormProps> = ({ players, matches, onSave, onCance
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Match Date</label>
-            <input 
-              type="date" 
-              required
-              value={date} 
-              onChange={(e) => setDate(e.target.value)}
-              className={inputClasses}
-            />
+            <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Venue (Optional)</label>
+            <select
+              value={venueId}
+              onChange={(e) => {
+                setVenueId(e.target.value);
+                setCourtNumber(1);
+              }}
+              className={selectClasses}
+              disabled={isLoadingVenues}
+            >
+              <option value="">Select Venue</option>
+              {venues.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+            </select>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Location</label>
-            <div className="relative">
-              <input 
-                list="location-options"
-                type="text" 
-                placeholder="e.g. Park Courts"
-                value={location} 
-                onChange={(e) => setLocation(e.target.value)}
-                className={inputClasses}
-              />
-              <datalist id="location-options">
-                {previousLocations.map(loc => <option key={loc} value={loc} />)}
-              </datalist>
+
+          {venueId && selectedVenue && (
+            <div>
+              <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Court Number</label>
+              <select
+                value={courtNumber}
+                onChange={(e) => setCourtNumber(Number(e.target.value))}
+                className={selectClasses}
+              >
+                {Array.from({ length: selectedVenue.courtCount }, (_, i) => i + 1).map(num => (
+                  <option key={num} value={num}>Court {num}</option>
+                ))}
+              </select>
             </div>
-          </div>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Match Date</label>
+          <input
+            type="date"
+            required
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className={inputClasses}
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Team A */}
           <div className={`p-4 rounded-2xl border transition-all ${scoreA > scoreB ? 'bg-lime-50 dark:bg-lime-900/20 border-lime-200 dark:border-lime-900/50' : 'bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800'}`}>
             <div className="flex justify-between items-center mb-4">
-               <h3 className="font-bold text-slate-700 dark:text-slate-300">Team A</h3>
-               {scoreA > scoreB && <span className="text-xl">🏆</span>}
+              <h3 className="font-bold text-slate-700 dark:text-slate-300">Team A</h3>
+              {scoreA > scoreB && <span className="text-xl">🏆</span>}
             </div>
             <div className="space-y-3">
               {[0, 1].map(i => (
                 (i === 0 || type === 'Doubles') && (
-                  <select 
+                  <select
                     key={`A-${i}`}
                     required
                     value={teamA[i]}
@@ -151,10 +184,10 @@ const MatchForm: React.FC<MatchFormProps> = ({ players, matches, onSave, onCance
             </div>
             <div className="mt-4">
               <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Points</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 min="0"
-                value={scoreA} 
+                value={scoreA}
                 onChange={(e) => setScoreA(parseInt(e.target.value) || 0)}
                 className="w-full mt-1 px-4 py-3 text-2xl font-black rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-center transition-colors"
               />
@@ -164,13 +197,13 @@ const MatchForm: React.FC<MatchFormProps> = ({ players, matches, onSave, onCance
           {/* Team B */}
           <div className={`p-4 rounded-2xl border transition-all ${scoreB > scoreA ? 'bg-lime-50 dark:bg-lime-900/20 border-lime-200 dark:border-lime-900/50' : 'bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800'}`}>
             <div className="flex justify-between items-center mb-4">
-               <h3 className="font-bold text-slate-700 dark:text-slate-300">Team B</h3>
-               {scoreB > scoreA && <span className="text-xl">🏆</span>}
+              <h3 className="font-bold text-slate-700 dark:text-slate-300">Team B</h3>
+              {scoreB > scoreA && <span className="text-xl">🏆</span>}
             </div>
             <div className="space-y-3">
               {[0, 1].map(i => (
                 (i === 0 || type === 'Doubles') && (
-                  <select 
+                  <select
                     key={`B-${i}`}
                     required
                     value={teamB[i]}
@@ -185,10 +218,10 @@ const MatchForm: React.FC<MatchFormProps> = ({ players, matches, onSave, onCance
             </div>
             <div className="mt-4">
               <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Points</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 min="0"
-                value={scoreB} 
+                value={scoreB}
                 onChange={(e) => setScoreB(parseInt(e.target.value) || 0)}
                 className="w-full mt-1 px-4 py-3 text-2xl font-black rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-center transition-colors"
               />
@@ -198,8 +231,8 @@ const MatchForm: React.FC<MatchFormProps> = ({ players, matches, onSave, onCance
 
         <div>
           <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Notes</label>
-          <textarea 
-            value={notes} 
+          <textarea
+            value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none resize-none h-20 focus:ring-2 focus:ring-lime-500 transition-colors"
             placeholder="Match context (weather, difficulty, notable plays)..."
@@ -207,8 +240,8 @@ const MatchForm: React.FC<MatchFormProps> = ({ players, matches, onSave, onCance
         </div>
 
         <div className="flex gap-4 pt-4">
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={hasDuplicates}
             className={`flex-1 font-bold py-4 rounded-xl transition-all shadow-lg active:scale-[0.98] ${hasDuplicates ? 'bg-slate-200 dark:bg-slate-800 cursor-not-allowed text-slate-400 dark:text-slate-600' : 'bg-lime-500 hover:bg-lime-600 text-white'}`}
           >

@@ -1,14 +1,14 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { User, Match, Player, AppState } from './types';
+import { User, Match, Player, AppState, Venue } from './types';
 import AuthOverlay from './components/AuthOverlay';
 import MatchForm from './components/MatchForm';
 import MatchList from './components/MatchList';
 import StatsDashboard from './components/StatsDashboard';
 import PlayerManager from './components/PlayerManager';
+import VenueManager from './components/VenueManager';
 import ProfileEditor from './components/ProfileEditor';
 import { Icons } from './constants';
-import { playersApi, matchesApi } from './api';
+import { playersApi, matchesApi, venuesApi } from './api';
 
 const THEME_KEY = 'picklepro_theme';
 
@@ -19,22 +19,25 @@ const App: React.FC = () => {
     players: [],
     isLoading: true
   });
+  const [venues, setVenues] = useState<Venue[]>([]);
   const [theme, setTheme] = useState<'light' | 'dark'>(
     (localStorage.getItem(THEME_KEY) as 'light' | 'dark') || 'light'
   );
   const [showForm, setShowForm] = useState(false);
-  const [activeTab, setActiveTab] = useState<'stats' | 'history' | 'players' | 'profile'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'history' | 'players' | 'venues' | 'profile'>('stats');
   const [error, setError] = useState<string | null>(null);
 
   // Load data from API
   const loadData = useCallback(async () => {
     try {
       setError(null);
-      const [players, matches] = await Promise.all([
+      const [players, matches, venueList] = await Promise.all([
         playersApi.getAll(),
-        matchesApi.getAll()
+        matchesApi.getAll(),
+        venuesApi.getAll()
       ]);
       setState(prev => ({ ...prev, players, matches, isLoading: false }));
+      setVenues(venueList);
     } catch (err) {
       console.error('Failed to load data:', err);
       setError('Failed to load data. Please try again.');
@@ -204,7 +207,7 @@ const App: React.FC = () => {
             </h1>
           </div>
           <div className="flex gap-2 p-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm">
-            {['stats', 'history', 'players', 'profile'].map((tab) => (
+            {['stats', 'history', 'players', 'venues', 'profile'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
@@ -221,8 +224,9 @@ const App: React.FC = () => {
         ) : (
           <div className="animate-in fade-in duration-300">
             {activeTab === 'stats' && <StatsDashboard matches={state.matches} userName={state.user.name} />}
-            {activeTab === 'history' && <MatchList matches={state.matches} onDelete={handleDeleteMatch} readOnly={state.user.role !== 'ADMIN'} />}
+            {activeTab === 'history' && <MatchList matches={state.matches} venues={venues} onDelete={handleDeleteMatch} readOnly={state.user.role !== 'ADMIN'} />}
             {activeTab === 'players' && <PlayerManager players={state.players} onAddPlayer={handleAddPlayer} onUpdatePlayer={handleUpdatePlayer} onRemovePlayer={handleRemovePlayer} readOnly={state.user.role !== 'ADMIN'} />}
+            {activeTab === 'venues' && <VenueManager user={state.user} />}
             {activeTab === 'profile' && (
               <ProfileEditor
                 player={state.players.find(p => p.email === state.user?.email)}

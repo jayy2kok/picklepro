@@ -14,15 +14,19 @@ import java.util.UUID;
 public class MatchService {
 
     private final MatchRepository matchRepository;
+    private final RatingService ratingService;
 
     public List<Match> getAllMatches() {
         return matchRepository.findAllByOrderByDateDesc();
     }
 
+    @Transactional
     public Match createMatch(Match match, String userId) {
         match.setId(UUID.randomUUID().toString());
         match.setUserId(userId);
-        return matchRepository.save(match);
+        Match savedMatch = matchRepository.save(match);
+        ratingService.updateRatings(savedMatch);
+        return savedMatch;
     }
 
     @Transactional

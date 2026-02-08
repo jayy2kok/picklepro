@@ -38,4 +38,7 @@ public class Player {
 
     @Indexed
     private String userId;
+
+    @Builder.Default
+    private Double rating = 1200.0;
 }
