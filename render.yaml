@@ -21,7 +21,7 @@ services:
         fromService:
           type: web
           name: picklepro-ui
-          property: host
+          property: hostURL
 
   # Frontend Service (Static Site)
   - type: web
@@ -36,6 +36,6 @@ services:
         fromService:
           type: web
           name: picklepro-backend
-          property: host
+          property: hostURL
       - key: VITE_GOOGLE_CLIENT_ID
         sync: false
