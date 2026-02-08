@@ -1,15 +1,14 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { User, Match, Player, AppState } from './types';
 import AuthOverlay from './components/AuthOverlay';
 import MatchForm from './components/MatchForm';
 import MatchList from './components/MatchList';
 import StatsDashboard from './components/StatsDashboard';
 import PlayerManager from './components/PlayerManager';
-import { Icons, API_URL } from './constants';
+import { Icons } from './constants';
+import { playersApi, matchesApi } from './api';
 
-const MATCHES_KEY = 'picklepro_matches';
-const PLAYERS_KEY = 'picklepro_players';
 const THEME_KEY = 'picklepro_theme';
 
 const App: React.FC = () => {
@@ -24,22 +23,42 @@ const App: React.FC = () => {
   );
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState<'stats' | 'history' | 'players'>('stats');
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const savedMatches = localStorage.getItem(MATCHES_KEY);
-    const savedPlayers = localStorage.getItem(PLAYERS_KEY);
-    const savedUser = localStorage.getItem('picklepro_user');
-
-    setState(prev => ({
-      ...prev,
-      matches: savedMatches ? JSON.parse(savedMatches) : [],
-      players: savedPlayers ? JSON.parse(savedPlayers) : [
-        { id: '1', name: 'Alex Pickle', joinedDate: new Date().toISOString() }
-      ],
-      user: savedUser ? JSON.parse(savedUser) : null,
-      isLoading: false
-    }));
+  // Load data from API
+  const loadData = useCallback(async () => {
+    try {
+      setError(null);
+      const [players, matches] = await Promise.all([
+        playersApi.getAll(),
+        matchesApi.getAll()
+      ]);
+      setState(prev => ({ ...prev, players, matches, isLoading: false }));
+    } catch (err) {
+      console.error('Failed to load data:', err);
+      setError('Failed to load data. Please try again.');
+      setState(prev => ({ ...prev, isLoading: false }));
+    }
   }, []);
+
+  // Check for existing session on mount
+  useEffect(() => {
+    const savedUser = localStorage.getItem('picklepro_user');
+    const token = localStorage.getItem('picklepro_token');
+
+    if (savedUser && token) {
+      setState(prev => ({ ...prev, user: JSON.parse(savedUser) }));
+    } else {
+      setState(prev => ({ ...prev, isLoading: false }));
+    }
+  }, []);
+
+  // Load data when user is authenticated
+  useEffect(() => {
+    if (state.user) {
+      loadData();
+    }
+  }, [state.user, loadData]);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -50,69 +69,82 @@ const App: React.FC = () => {
     localStorage.setItem(THEME_KEY, theme);
   }, [theme]);
 
-  useEffect(() => {
-    if (!state.isLoading) {
-      localStorage.setItem(MATCHES_KEY, JSON.stringify(state.matches));
-      localStorage.setItem(PLAYERS_KEY, JSON.stringify(state.players));
-    }
-  }, [state.matches, state.players, state.isLoading]);
-
   const handleLogin = (user: User) => {
-    setState(prev => ({ ...prev, user }));
+    setState(prev => ({ ...prev, user, isLoading: true }));
     localStorage.setItem('picklepro_user', JSON.stringify(user));
   };
 
   const handleLogout = () => {
-    setState(prev => ({ ...prev, user: null }));
+    setState({ user: null, matches: [], players: [], isLoading: false });
     localStorage.removeItem('picklepro_user');
+    localStorage.removeItem('picklepro_token');
   };
 
-  const handleAddPlayer = (name: string) => {
-    const newPlayer: Player = { id: crypto.randomUUID(), name, joinedDate: new Date().toISOString() };
-    setState(prev => ({ ...prev, players: [...prev.players, newPlayer] }));
-  };
-
-  const handleRemovePlayer = (id: string) => {
-    if (window.confirm('Delete this player? Match history will remain but names will stay as text.')) {
-      setState(prev => ({ ...prev, players: prev.players.filter(p => p.id !== id) }));
+  const handleAddPlayer = async (name: string) => {
+    try {
+      setError(null);
+      const newPlayer = await playersApi.create(name);
+      setState(prev => ({ ...prev, players: [...prev.players, newPlayer] }));
+    } catch (err) {
+      console.error('Failed to add player:', err);
+      setError('Failed to add player. Please try again.');
     }
   };
 
+  const handleRemovePlayer = async (id: string) => {
+    if (!window.confirm('Delete this player? Match history will remain but names will stay as text.')) {
+      return;
+    }
+    try {
+      setError(null);
+      await playersApi.delete(id);
+      setState(prev => ({ ...prev, players: prev.players.filter(p => p.id !== id) }));
+    } catch (err) {
+      console.error('Failed to delete player:', err);
+      setError('Failed to delete player. Please try again.');
+    }
+  };
 
-  const handleSaveMatch = (matchData: Omit<Match, 'id' | 'userId'>) => {
-    const newMatch: Match = { ...matchData, id: crypto.randomUUID(), userId: state.user?.id || 'anon' };
-    setState(prev => ({ ...prev, matches: [...prev.matches, newMatch] }));
-    setShowForm(false);
-    setActiveTab('history');
+  const handleSaveMatch = async (matchData: Omit<Match, 'id' | 'userId'>) => {
+    try {
+      setError(null);
+      const newMatch = await matchesApi.create(matchData);
+      setState(prev => ({ ...prev, matches: [...prev.matches, newMatch] }));
+      setShowForm(false);
+      setActiveTab('history');
+    } catch (err) {
+      console.error('Failed to save match:', err);
+      setError('Failed to save match. Please try again.');
+    }
   };
 
   const handleDeleteMatch = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this match?')) return;
 
     try {
-      const token = localStorage.getItem('picklepro_token');
-      const response = await fetch(`${API_URL}/api/matches/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        setState(prev => ({ ...prev, matches: prev.matches.filter(m => m.id !== id) }));
-      } else {
-        alert('Failed to delete match. You may not have permission.');
-      }
-    } catch (error) {
-      console.error('Error deleting match:', error);
-      // Fall back to local deletion if API fails
+      setError(null);
+      await matchesApi.delete(id);
       setState(prev => ({ ...prev, matches: prev.matches.filter(m => m.id !== id) }));
+    } catch (err) {
+      console.error('Failed to delete match:', err);
+      setError('Failed to delete match. Please try again.');
     }
   };
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
   if (!state.user) return <AuthOverlay onLogin={handleLogin} />;
+
+  if (state.isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center dark:bg-slate-950">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-lime-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-24 dark:bg-slate-950 transition-colors duration-300">
@@ -143,6 +175,13 @@ const App: React.FC = () => {
       </nav>
 
       <main className="max-w-6xl mx-auto px-4 pt-8">
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-800 rounded-xl text-red-700 dark:text-red-300 flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">&times;</button>
+          </div>
+        )}
+
         <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-4xl font-black text-slate-900 dark:text-white">

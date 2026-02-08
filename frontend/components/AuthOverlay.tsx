@@ -2,7 +2,11 @@
 import React, { useState } from 'react';
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { User } from '../types';
-import { API_URL } from '../constants';
+
+const API_URL = (() => {
+  const url = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  return url.startsWith('http') ? url : `https://${url}`;
+})();
 
 interface AuthOverlayProps {
   onLogin: (user: User) => void;
@@ -34,7 +38,7 @@ const AuthOverlay: React.FC<AuthOverlayProps> = ({ onLogin }) => {
 
       const data = await response.json();
       onLogin(data.user);
-      localStorage.setItem('jwt_token', data.token);
+      localStorage.setItem('picklepro_token', data.token);
     } catch (err) {
       console.error('Auth error:', err);
       setError(err instanceof Error ? err.message : 'Authentication failed');

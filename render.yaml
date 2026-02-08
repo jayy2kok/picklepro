@@ -18,10 +18,7 @@ services:
       - key: ADMIN_EMAILS
         sync: false
       - key: CORS_ORIGINS
-        fromService:
-          type: web
-          name: picklepro-ui
-          property: hostURL
+        value: https://picklepro-ui.onrender.com
 
   # Frontend Service (Static Site)
   - type: web
@@ -33,9 +30,6 @@ services:
     startCommand: cd frontend && npm run preview
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: picklepro-backend
-          property: hostURL
+        value: https://picklepro-backend.onrender.com
       - key: VITE_GOOGLE_CLIENT_ID
         sync: false
