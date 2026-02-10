@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface MatchRepository extends MongoRepository<Match, String> {
+public interface MatchRepository extends MongoRepository<Match, String>, MatchRepositoryCustom {
 
     List<Match> findByUserId(String userId);
 

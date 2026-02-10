@@ -1,15 +1,15 @@
 package com.picklepro.service;
 
-import com.picklepro.model.Match;
-import com.picklepro.model.Player;
-import com.picklepro.repository.PlayerRepository;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import com.picklepro.model.Match;
+import com.picklepro.model.Player;
+import com.picklepro.repository.PlayerRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -47,7 +47,6 @@ public class RatingService {
         double ratingB = getAverageRating(teamBPlayers);
 
         double expectedA = 1.0 / (1.0 + Math.pow(10, (ratingB - ratingA) / 400.0));
-        double expectedB = 1.0 / (1.0 + Math.pow(10, (ratingA - ratingB) / 400.0));
 
         double actualA = match.getScoreA() > match.getScoreB() ? 1.0 : 0.0;
         // If draw (not typical in Pickleball but possible in casual), 0.5? Assuming

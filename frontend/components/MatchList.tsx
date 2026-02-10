@@ -60,7 +60,7 @@ const MatchList: React.FC<MatchListProps> = ({ matches, venues, onDelete, readOn
               <div className="text-center border-r border-slate-200 dark:border-slate-800 pr-2">
                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 uppercase mb-1">TEAM A</p>
                 <div className="flex flex-wrap justify-center gap-1 mb-2 h-10 overflow-hidden">
-                  {match.teamA.map(p => (
+                  {(match.teamANames || match.teamA).map(p => (
                     <span key={p} className="text-[10px] font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded shadow-sm border border-slate-100 dark:border-slate-800">{p}</span>
                   ))}
                 </div>
@@ -72,7 +72,7 @@ const MatchList: React.FC<MatchListProps> = ({ matches, venues, onDelete, readOn
               <div className="text-center pl-2">
                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 uppercase mb-1">TEAM B</p>
                 <div className="flex flex-wrap justify-center gap-1 mb-2 h-10 overflow-hidden">
-                  {match.teamB.map(p => (
+                  {(match.teamBNames || match.teamB).map(p => (
                     <span key={p} className="text-[10px] font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded shadow-sm border border-slate-100 dark:border-slate-800">{p}</span>
                   ))}
                 </div>

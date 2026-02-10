@@ -1,16 +1,17 @@
 
 import React, { useMemo, useEffect, useState } from 'react';
-import { Match, PlayerStats } from '../types';
+import { Match, Player, PlayerStats } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface StatsDashboardProps {
   matches: Match[];
+  players: Player[];
   userName: string;
 }
 
 const ITEMS_PER_PAGE = 10;
 
-const StatsDashboard: React.FC<StatsDashboardProps> = ({ matches, userName }) => {
+const StatsDashboard: React.FC<StatsDashboardProps> = ({ matches, players, userName }) => {
   const [activePlayerName, setActivePlayerName] = useState<string>(userName);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -18,14 +19,16 @@ const StatsDashboard: React.FC<StatsDashboardProps> = ({ matches, userName }) =>
   const allStats = useMemo(() => {
     const playerStats: Record<string, PlayerStats> = {};
     matches.forEach(m => {
-      const players = [...m.teamA, ...m.teamB];
+      const teamANames = m.teamANames || m.teamA;
+      const teamBNames = m.teamBNames || m.teamB;
+      const players = [...teamANames, ...teamBNames];
       players.forEach(p => {
         if (!playerStats[p]) {
           playerStats[p] = { name: p, matchesPlayed: 0, wins: 0, losses: 0, winRate: 0, avgPointsFor: 0, avgPointsAgainst: 0 };
         }
         const s = playerStats[p];
         s.matchesPlayed++;
-        const isTeamA = m.teamA.includes(p);
+        const isTeamA = teamANames.includes(p);
         const win = (isTeamA && m.scoreA > m.scoreB) || (!isTeamA && m.scoreB > m.scoreA);
         if (win) s.wins++; else s.losses++;
         const pFor = isTeamA ? m.scoreA : m.scoreB;
@@ -68,10 +71,10 @@ const StatsDashboard: React.FC<StatsDashboardProps> = ({ matches, userName }) =>
 
   const chartData = useMemo(() => {
     return matches
-      .filter(m => [...m.teamA, ...m.teamB].includes(activePlayerName))
+      .filter(m => [...(m.teamANames || m.teamA), ...(m.teamBNames || m.teamB)].includes(activePlayerName))
       .slice(-10)
       .map((m, i) => {
-        const isTeamA = m.teamA.includes(activePlayerName);
+        const isTeamA = (m.teamANames || m.teamA).includes(activePlayerName);
         return {
           name: `M${i + 1}`,
           points: isTeamA ? m.scoreA : m.scoreB,
@@ -136,7 +139,7 @@ const StatsDashboard: React.FC<StatsDashboardProps> = ({ matches, userName }) =>
                     {activePlayerName === s.name && <div className="w-1.5 h-1.5 rounded-full bg-lime-500"></div>}
                     {s.name}
                   </td>
-                  <td className="py-4 text-center text-slate-500 dark:text-slate-400">{matches.find(m => m.teamA.includes(s.name) || m.teamB.includes(s.name)) ? (matches.find(m => m.teamA.includes(s.name) || m.teamB.includes(s.name)) as any).rating || 1200 : 1200}</td>
+                  <td className="py-4 text-center text-slate-500 dark:text-slate-400">{players.find(p => p.name === s.name)?.rating?.toFixed(0) || 1200}</td>
                   <td className="py-4 text-center text-slate-500 dark:text-slate-400">{s.matchesPlayed}</td>
                   <td className="py-4 text-center text-lime-600 dark:text-lime-400 font-bold">{s.avgPointsFor.toFixed(1)}</td>
                   <td className="py-4 text-center text-slate-400 dark:text-slate-600">{s.avgPointsAgainst.toFixed(1)}</td>

@@ -1,5 +1,6 @@
 package com.picklepro.controller;
 
+import com.picklepro.dto.MatchResponse;
 import com.picklepro.model.Match;
 import com.picklepro.model.User;
 import com.picklepro.service.MatchService;
@@ -21,16 +22,16 @@ public class MatchController {
     private final MatchService matchService;
 
     @GetMapping
-    public ResponseEntity<List<Match>> getMatches() {
-        List<Match> matches = matchService.getAllMatches();
+    public ResponseEntity<List<MatchResponse>> getMatches() {
+        List<MatchResponse> matches = matchService.getAllMatches();
         return ResponseEntity.ok(matches);
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Match> createMatch(@AuthenticationPrincipal User user,
+    public ResponseEntity<MatchResponse> createMatch(@AuthenticationPrincipal User user,
             @Valid @RequestBody Match match) {
-        Match created = matchService.createMatch(match, user.getId());
+        MatchResponse created = matchService.createMatch(match, user.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 

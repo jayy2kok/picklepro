@@ -41,7 +41,7 @@ const MatchForm: React.FC<MatchFormProps> = ({ players, matches, onSave, onCance
     return venues.find(v => v.id === venueId);
   }, [venues, venueId]);
 
-  const selectedPlayerNames = useMemo(() => {
+  const selectedPlayerIds = useMemo(() => {
     const list = [teamA[0], teamB[0]];
     if (type === 'Doubles') {
       list.push(teamA[1], teamB[1]);
@@ -50,8 +50,8 @@ const MatchForm: React.FC<MatchFormProps> = ({ players, matches, onSave, onCance
   }, [teamA, teamB, type]);
 
   const hasDuplicates = useMemo(() => {
-    return new Set(selectedPlayerNames).size !== selectedPlayerNames.length;
-  }, [selectedPlayerNames]);
+    return new Set(selectedPlayerIds).size !== selectedPlayerIds.length;
+  }, [selectedPlayerIds]);
 
   const handlePlayerChange = (team: 'A' | 'B', index: number, value: string) => {
     if (team === 'A') {
@@ -174,10 +174,10 @@ const MatchForm: React.FC<MatchFormProps> = ({ players, matches, onSave, onCance
                     required
                     value={teamA[i]}
                     onChange={(e) => handlePlayerChange('A', i, e.target.value)}
-                    className={`${selectClasses} ${teamA[i] && selectedPlayerNames.filter(name => name === teamA[i]).length > 1 ? 'border-rose-400 ring-1 ring-rose-400' : 'border-slate-200 dark:border-slate-700 focus:border-lime-500'}`}
+                    className={`${selectClasses} ${teamA[i] && selectedPlayerIds.filter(id => id === teamA[i]).length > 1 ? 'border-rose-400 ring-1 ring-rose-400' : 'border-slate-200 dark:border-slate-700 focus:border-lime-500'}`}
                   >
                     <option value="" className="dark:bg-slate-900">Select Player {i + 1}</option>
-                    {players.map(p => <option key={p.id} value={p.name} className="text-slate-900 dark:text-white dark:bg-slate-900">{p.name}</option>)}
+                    {players.map(p => <option key={p.id} value={p.id} className="text-slate-900 dark:text-white dark:bg-slate-900">{p.name}</option>)}
                   </select>
                 )
               ))}
@@ -208,10 +208,10 @@ const MatchForm: React.FC<MatchFormProps> = ({ players, matches, onSave, onCance
                     required
                     value={teamB[i]}
                     onChange={(e) => handlePlayerChange('B', i, e.target.value)}
-                    className={`${selectClasses} ${teamB[i] && selectedPlayerNames.filter(name => name === teamB[i]).length > 1 ? 'border-rose-400 ring-1 ring-rose-400' : 'border-slate-200 dark:border-slate-700 focus:border-lime-500'}`}
+                    className={`${selectClasses} ${teamB[i] && selectedPlayerIds.filter(id => id === teamB[i]).length > 1 ? 'border-rose-400 ring-1 ring-rose-400' : 'border-slate-200 dark:border-slate-700 focus:border-lime-500'}`}
                   >
                     <option value="" className="dark:bg-slate-900">Select Player {i + 1}</option>
-                    {players.map(p => <option key={p.id} value={p.name} className="text-slate-900 dark:text-white dark:bg-slate-900">{p.name}</option>)}
+                    {players.map(p => <option key={p.id} value={p.id} className="text-slate-900 dark:text-white dark:bg-slate-900">{p.name}</option>)}
                   </select>
                 )
               ))}

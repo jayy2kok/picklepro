@@ -30,6 +30,8 @@ export interface Match {
   type: MatchType;
   teamA: string[];
   teamB: string[];
+  teamANames?: string[];
+  teamBNames?: string[];
   scoreA: number;
   scoreB: number;
   venueId?: string;

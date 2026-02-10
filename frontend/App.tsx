@@ -127,7 +127,9 @@ const App: React.FC = () => {
     try {
       setError(null);
       const newMatch = await matchesApi.create(matchData);
-      setState(prev => ({ ...prev, matches: [...prev.matches, newMatch] }));
+      // Re-fetch players to pick up updated ratings from RatingService
+      const updatedPlayers = await playersApi.getAll();
+      setState(prev => ({ ...prev, matches: [...prev.matches, newMatch], players: updatedPlayers }));
       setShowForm(false);
       setActiveTab('history');
     } catch (err) {
@@ -142,7 +144,9 @@ const App: React.FC = () => {
     try {
       setError(null);
       await matchesApi.delete(id);
-      setState(prev => ({ ...prev, matches: prev.matches.filter(m => m.id !== id) }));
+      // Re-fetch players to pick up any rating recalculations
+      const updatedPlayers = await playersApi.getAll();
+      setState(prev => ({ ...prev, matches: prev.matches.filter(m => m.id !== id), players: updatedPlayers }));
     } catch (err) {
       console.error('Failed to delete match:', err);
       setError('Failed to delete match. Please try again.');
@@ -223,7 +227,7 @@ const App: React.FC = () => {
           <MatchForm players={state.players} matches={state.matches} onSave={handleSaveMatch} onCancel={() => setShowForm(false)} />
         ) : (
           <div className="animate-in fade-in duration-300">
-            {activeTab === 'stats' && <StatsDashboard matches={state.matches} userName={state.user.name} />}
+            {activeTab === 'stats' && <StatsDashboard matches={state.matches} players={state.players} userName={state.user.name} />}
             {activeTab === 'history' && <MatchList matches={state.matches} venues={venues} onDelete={handleDeleteMatch} readOnly={state.user.role !== 'ADMIN'} />}
             {activeTab === 'players' && <PlayerManager players={state.players} onAddPlayer={handleAddPlayer} onUpdatePlayer={handleUpdatePlayer} onRemovePlayer={handleRemovePlayer} readOnly={state.user.role !== 'ADMIN'} />}
             {activeTab === 'venues' && <VenueManager user={state.user} />}

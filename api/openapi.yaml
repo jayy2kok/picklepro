@@ -86,6 +86,7 @@ components:
 
     Match:
       type: object
+      description: "Input schema for creating a match. Teams are specified by Player IDs."
       required:
         - date
         - type
@@ -108,12 +109,12 @@ components:
           type: array
           items:
             type: string
-          description: List of player names or IDs in Team A
+          description: "List of Player IDs in Team A"
         teamB:
           type: array
           items:
             type: string
-          description: List of player names or IDs in Team B
+          description: "List of Player IDs in Team B"
         scoreA:
           type: integer
           minimum: 0
@@ -134,6 +135,44 @@ components:
           type: string
           format: uuid
           readOnly: true
+
+    MatchResponse:
+      type: object
+      description: "Response schema for match history. Teams are returned with resolved Player Names."
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date-time
+        type:
+          type: string
+          enum: [Singles, Doubles]
+        teamANames:
+          type: array
+          items:
+            type: string
+          description: "Resolved player names for Team A"
+        teamBNames:
+          type: array
+          items:
+            type: string
+          description: "Resolved player names for Team B"
+        scoreA:
+          type: integer
+        scoreB:
+          type: integer
+        notes:
+          type: string
+        venueId:
+          type: string
+          format: uuid
+        courtNumber:
+          type: integer
+        userId:
+          type: string
+          format: uuid
 
     Venue:
       type: object
@@ -348,15 +387,16 @@ paths:
   /matches:
     get:
       summary: Get match history for the authenticated user
+      description: "Returns matches with player names resolved from Player IDs via MongoDB aggregation."
       responses:
         '200':
-          description: A list of matches
+          description: A list of matches with resolved player names
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Match'
+                  $ref: '#/components/schemas/MatchResponse'
     post:
       summary: Record a new match
       requestBody:
@@ -371,7 +411,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Match'
+                $ref: '#/components/schemas/MatchResponse'
 
   /matches/{id}:
     parameters:
