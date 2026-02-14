@@ -50,6 +50,9 @@ public class Match {
     @Indexed
     private String userId;
 
+    @Indexed
+    private String groupId;
+
     public enum MatchType {
         Singles, Doubles
     }

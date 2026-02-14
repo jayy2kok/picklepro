@@ -3,6 +3,8 @@ package com.picklepro.service;
 import com.picklepro.dto.MatchResponse;
 import com.picklepro.model.Match;
 import com.picklepro.model.Player;
+import com.picklepro.model.Role;
+import com.picklepro.model.User;
 import com.picklepro.repository.MatchRepository;
 import com.picklepro.repository.PlayerRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,8 +39,24 @@ public class MatchService {
     }
 
     @Transactional
-    public void deleteMatch(String matchId, String userId) {
-        matchRepository.deleteByIdAndUserId(matchId, userId);
+    public void deleteMatch(String matchId, User currentUser) {
+        Match match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Match not found"));
+
+        boolean isSystemAdmin = currentUser.getSystemRole() == User.SystemRole.ADMIN;
+        boolean isCreator = match.getUserId() != null && match.getUserId().equals(currentUser.getId());
+
+        boolean isGroupAdmin = false;
+        if (match.getGroupId() != null && currentUser.getMemberships() != null) {
+            isGroupAdmin = currentUser.getMemberships().get(match.getGroupId()) == Role.GROUP_ADMIN;
+        }
+
+        if (isSystemAdmin || isCreator || isGroupAdmin) {
+            matchRepository.deleteById(matchId);
+            // Optionally update ratings if needed (revert)
+        } else {
+            throw new RuntimeException("Unauthorized: You cannot delete this match.");
+        }
     }
 
     private MatchResponse toMatchResponse(Match match) {
@@ -68,6 +86,7 @@ public class MatchService {
                 .venueId(match.getVenueId())
                 .courtNumber(match.getCourtNumber())
                 .userId(match.getUserId())
+                .groupId(match.getGroupId())
                 .build();
     }
 }

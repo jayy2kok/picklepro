@@ -12,6 +12,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import jakarta.validation.constraints.NotBlank;
 import java.time.Instant;
 import java.util.Map;
+import java.util.HashMap;
 
 @Data
 @Builder
@@ -26,7 +27,7 @@ public class Player {
     @NotBlank(message = "Player name is required")
     private String name;
 
-    @Indexed
+    @Indexed(unique = true, sparse = true)
     private String email;
 
     private String contactNumber;
@@ -41,4 +42,10 @@ public class Player {
 
     @Builder.Default
     private Double rating = 1200.0;
+
+    @Builder.Default
+    private User.SystemRole systemRole = User.SystemRole.USER;
+
+    @Builder.Default
+    private Map<String, Role> memberships = new HashMap<>();
 }

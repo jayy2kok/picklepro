@@ -7,35 +7,20 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.Indexed;
-import java.util.Map;
-import java.util.HashMap;
+
+import jakarta.validation.constraints.NotBlank;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "users")
-public class User {
+@Document(collection = "groups")
+public class Group {
 
     @Id
     private String id;
 
-    private String name;
-
+    @NotBlank(message = "Group name is required")
     @Indexed(unique = true)
-    private String email;
-
-    private String picture;
-
-    private String googleId;
-
-    @Builder.Default
-    private SystemRole systemRole = SystemRole.USER;
-
-    @Builder.Default
-    private Map<String, Role> memberships = new HashMap<>();
-
-    public enum SystemRole {
-        ADMIN, USER
-    }
+    private String name;
 }

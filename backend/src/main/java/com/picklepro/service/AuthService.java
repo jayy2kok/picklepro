@@ -5,7 +5,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.picklepro.dto.AuthResponse;
-import com.picklepro.model.Role;
 import com.picklepro.model.User;
 import com.picklepro.repository.UserRepository;
 import com.picklepro.security.JwtTokenProvider;
@@ -27,6 +26,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final com.picklepro.repository.PlayerRepository playerRepository;
 
     @Value("${google.client-id}")
     private String googleClientId;
@@ -54,14 +54,21 @@ public class AuthService {
             String name = (String) payload.get("name");
             String picture = (String) payload.get("picture");
 
-            // Determine role
-            Role role = Arrays.asList(adminEmails.split(",")).contains(email) ? Role.ADMIN : Role.VIEWER;
+            // Determine system role
+            boolean isAdmin = Arrays.asList(adminEmails.split(",")).contains(email);
+            User.SystemRole systemRole = isAdmin ? User.SystemRole.ADMIN : User.SystemRole.USER;
 
             User user = userRepository.findByGoogleId(googleId)
-                    .orElseGet(() -> createUser(googleId, email, name, picture, role));
+                    .orElseGet(() -> createUser(googleId, email, name, picture, systemRole));
 
             // Update user info and role if changed
             boolean changed = false;
+            // Only update role if it's currently different or if we just determined they
+            // should be admin
+            if (user.getSystemRole() != systemRole) {
+                user.setSystemRole(systemRole);
+                changed = true;
+            }
             if (!user.getName().equals(name)) {
                 user.setName(name);
                 changed = true;
@@ -70,14 +77,20 @@ public class AuthService {
                 user.setPicture(picture);
                 changed = true;
             }
-            if (user.getRole() != role) {
-                user.setRole(role);
-                changed = true;
-            }
 
             if (changed) {
                 user = userRepository.save(user);
             }
+
+            final User finalUser = user;
+
+            // Sync system role to Player entity if exists
+            playerRepository.findByEmail(email).ifPresent(player -> {
+                if (player.getSystemRole() != finalUser.getSystemRole()) {
+                    player.setSystemRole(finalUser.getSystemRole());
+                    playerRepository.save(player);
+                }
+            });
 
             String jwt = jwtTokenProvider.generateToken(user.getId());
 
@@ -89,14 +102,14 @@ public class AuthService {
         }
     }
 
-    private User createUser(String googleId, String email, String name, String picture, Role role) {
+    private User createUser(String googleId, String email, String name, String picture, User.SystemRole systemRole) {
         User user = User.builder()
                 .id(UUID.randomUUID().toString())
                 .googleId(googleId)
                 .email(email)
                 .name(name)
                 .picture(picture)
-                .role(role)
+                .systemRole(systemRole)
                 .build();
         return userRepository.save(user);
     }

@@ -1,29 +1,77 @@
-
-import React, { useState } from 'react';
-import { Player } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Player, Role } from '../types';
+import { playersApi } from '../api';
 
 interface PlayerManagerProps {
   players: Player[];
-  onAddPlayer: (playerData: Partial<Player>) => void;
+  activeGroupId: string | null;
+  onAddPlayer: (playerData: Partial<Player>, role?: Role) => void;
   onUpdatePlayer: (id: string, playerData: Partial<Player>) => void;
   onRemovePlayer: (id: string) => void;
+  onAddExistingToGroup: (playerId: string, groupId: string, role: Role) => void;
   readOnly?: boolean;
 }
 
-const PlayerManager: React.FC<PlayerManagerProps> = ({ players, onAddPlayer, onUpdatePlayer, onRemovePlayer, readOnly }) => {
+const PlayerManager: React.FC<PlayerManagerProps> = ({
+  players,
+  activeGroupId,
+  onAddPlayer,
+  onUpdatePlayer,
+  onRemovePlayer,
+  onAddExistingToGroup,
+  readOnly
+}) => {
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
+  const [existingPlayer, setExistingPlayer] = useState<Player | null>(null);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<Role>('VIEWER');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
 
+  // Check if player exists by email
+  useEffect(() => {
+    const checkEmail = async () => {
+      if (newEmail.trim() && newEmail.includes('@')) {
+        setIsCheckingEmail(true);
+        try {
+          const player = await playersApi.findByEmail(newEmail.trim());
+          // Only suggest if not already in the group
+          if (player && activeGroupId && !player.memberships[activeGroupId]) {
+            setExistingPlayer(player);
+          } else {
+            setExistingPlayer(null);
+          }
+        } catch (err) {
+          console.error('Error checking email:', err);
+        } finally {
+          setIsCheckingEmail(false);
+        }
+      } else {
+        setExistingPlayer(null);
+      }
+    };
+
+    const timer = setTimeout(checkEmail, 500);
+    return () => clearTimeout(timer);
+  }, [newEmail, activeGroupId]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (existingPlayer && activeGroupId) {
+      onAddExistingToGroup(existingPlayer.id, activeGroupId, selectedRole);
+      setNewName('');
+      setNewEmail('');
+      setExistingPlayer(null);
+      return;
+    }
+
     if (newName.trim()) {
       onAddPlayer({
         name: newName.trim(),
         ...(newEmail.trim() ? { email: newEmail.trim() } : {})
-      });
+      }, selectedRole);
       setNewName('');
       setNewEmail('');
     }
@@ -56,7 +104,7 @@ const PlayerManager: React.FC<PlayerManagerProps> = ({ players, onAddPlayer, onU
       {!readOnly && (
         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
           <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Add New Player</h2>
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex flex-col md:flex-row gap-2">
               <input
                 type="text"
@@ -64,17 +112,56 @@ const PlayerManager: React.FC<PlayerManagerProps> = ({ players, onAddPlayer, onU
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-lime-500 outline-none transition-colors"
-                required
+                required={!existingPlayer}
+                disabled={!!existingPlayer}
               />
-              <input
-                type="email"
-                placeholder="Email (optional)"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-lime-500 outline-none transition-colors"
-              />
-              <button type="submit" className="px-6 py-3 bg-lime-500 text-white font-bold rounded-xl shadow-md hover:bg-lime-600 transition-all whitespace-nowrap">Add Player</button>
+              <div className="flex-1 relative">
+                <input
+                  type="email"
+                  placeholder="Email (optional)"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-lime-500 outline-none transition-colors"
+                />
+                {isCheckingEmail && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="w-4 h-4 border-2 border-lime-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+              </div>
+
+              {(existingPlayer || activeGroupId) && (
+                <select
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value as Role)}
+                  className="px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-lime-500 outline-none transition-colors"
+                >
+                  <option value="VIEWER">Viewer</option>
+                  <option value="GROUP_ADMIN">Group Admin</option>
+                </select>
+              )}
+
+              <button type="submit" className={`px-6 py-3 ${existingPlayer ? 'bg-blue-500 hover:bg-blue-600' : 'bg-lime-500 hover:bg-lime-600'} text-white font-bold rounded-xl shadow-md transition-all whitespace-nowrap`}>
+                {existingPlayer ? 'Add Existing to Group' : 'Add Player'}
+              </button>
             </div>
+
+            {existingPlayer && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold text-blue-800 dark:text-blue-300">Player Found: {existingPlayer.name}</p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400">This player already exists in the system. Adding them to this group instead of creating a new profile.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setExistingPlayer(null); setNewEmail(''); }}
+                  className="text-blue-500 hover:text-blue-700 font-bold text-xs"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+
             <p className="text-xs text-slate-500 dark:text-slate-400">Adding an email allows the player to edit their profile when they login.</p>
           </form>
         </div>
@@ -87,6 +174,7 @@ const PlayerManager: React.FC<PlayerManagerProps> = ({ players, onAddPlayer, onU
               <tr>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Player Name</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Email</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Role</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Joined</th>
                 {!readOnly && <th className="px-6 py-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Actions</th>}
               </tr>
@@ -114,6 +202,9 @@ const PlayerManager: React.FC<PlayerManagerProps> = ({ players, onAddPlayer, onU
                           className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:ring-2 focus:ring-lime-500 outline-none text-sm"
                           placeholder="email@example.com"
                         />
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm text-slate-400 dark:text-slate-600">-</span>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-500">{new Date(p.joinedDate).toLocaleDateString()}</td>
                       <td className="px-6 py-4">
@@ -146,6 +237,21 @@ const PlayerManager: React.FC<PlayerManagerProps> = ({ players, onAddPlayer, onU
                           </span>
                         ) : (
                           <span className="text-slate-300 dark:text-slate-600 italic">No email</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {p.systemRole === 'ADMIN' ? (
+                          <span className="px-2 py-1 text-xs font-bold text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/30 rounded-lg">
+                            Admin
+                          </span>
+                        ) : activeGroupId && p.memberships && p.memberships[activeGroupId] === 'GROUP_ADMIN' ? (
+                          <span className="px-2 py-1 text-xs font-bold text-amber-600 bg-amber-100 dark:text-amber-400 dark:bg-amber-900/30 rounded-lg">
+                            Group Admin
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 text-xs font-medium text-slate-500 bg-slate-100 dark:text-slate-400 dark:bg-slate-800 rounded-lg">
+                            Viewer
+                          </span>
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-500">{new Date(p.joinedDate).toLocaleDateString()}</td>

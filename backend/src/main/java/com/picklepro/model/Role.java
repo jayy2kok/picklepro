@@ -1,6 +1,6 @@
 package com.picklepro.model;
 
 public enum Role {
-    ADMIN,
+    GROUP_ADMIN,
     VIEWER
 }

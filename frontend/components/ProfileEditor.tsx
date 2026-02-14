@@ -28,7 +28,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ player, user, onSave, onC
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const isAdmin = user.role === 'ADMIN';
+    const isAdmin = user.systemRole === 'ADMIN';
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;

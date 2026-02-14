@@ -1,13 +1,9 @@
 package com.picklepro.security;
 
-import com.picklepro.model.User;
-import com.picklepro.repository.UserRepository;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,9 +12,18 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
+import com.picklepro.model.Player;
+import com.picklepro.model.Role;
+import com.picklepro.model.User;
+import com.picklepro.repository.PlayerRepository;
+import com.picklepro.repository.UserRepository;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
@@ -27,6 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
     private final UserRepository userRepository;
+    private final PlayerRepository playerRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -39,13 +45,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String userId = tokenProvider.getUserIdFromToken(jwt);
 
                 User user = userRepository.findById(userId).orElse(null);
-
+                Player player = playerRepository.findById(userId).orElse(null);
+                if (player != null && user != null) {
+                    if (!player.getMemberships().equals(user.getMemberships())) {
+                        user.setMemberships(player.getMemberships());
+                        userRepository.save(user);
+                    }
+                }
                 if (user != null) {
-                    List<SimpleGrantedAuthority> authorities = Collections.emptyList();
-                    if (user.getRole() != null) {
-                        authorities = List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+                    List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                    authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getSystemRole().name()));
+
+                    // Add ROLE_GROUP_ADMIN if they are admin in any group
+                    boolean isGroupAdmin = false;
+                    if (user.getMemberships() != null) {
+                        isGroupAdmin = user.getMemberships().values().stream()
+                                .anyMatch(role -> role == Role.GROUP_ADMIN);
                     }
 
+                    if (isGroupAdmin) {
+                        authorities.add(new SimpleGrantedAuthority("ROLE_GROUP_ADMIN"));
+                    }
+
+                    // Re-attach the principal with authorities
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user,
                             null, authorities);
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

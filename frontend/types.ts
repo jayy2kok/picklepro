@@ -1,20 +1,22 @@
-
 export type MatchType = 'Singles' | 'Doubles';
+export type Role = 'GROUP_ADMIN' | 'VIEWER';
+export type SystemRole = 'ADMIN' | 'USER';
+
+export interface Group {
+  id: string;
+  name: string;
+}
 
 export interface Player {
   id: string;
   name: string;
   email?: string;
   contactNumber?: string;
-  socialMedia?: {
-    linkedin?: string;
-    x?: string;
-    instagram?: string;
-    facebook?: string;
-    youtube?: string;
-  };
+  socialMedia?: Record<string, string>;
   joinedDate: string;
   rating?: number;
+  systemRole: SystemRole;
+  memberships: Record<string, Role>;
 }
 
 export interface Venue {
@@ -22,6 +24,8 @@ export interface Venue {
   name: string;
   location: string;
   courtCount: number;
+  createdByUserId?: string;
+  groupId?: string;
 }
 
 export interface Match {
@@ -38,6 +42,7 @@ export interface Match {
   courtNumber?: number;
   notes?: string;
   userId: string;
+  groupId?: string;
 }
 
 export interface PlayerStats {
@@ -56,12 +61,15 @@ export interface User {
   name: string;
   email: string;
   picture: string;
-  role?: 'ADMIN' | 'VIEWER';
+  systemRole: SystemRole;
+  memberships: Record<string, Role>;
 }
 
 export interface AppState {
   user: User | null;
   matches: Match[];
   players: Player[];
+  groups: Group[];
+  activeGroupId: string | null;
   isLoading: boolean;
 }

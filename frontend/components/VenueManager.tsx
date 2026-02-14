@@ -4,9 +4,11 @@ import { venuesApi } from '../api';
 
 interface VenueManagerProps {
     user: User;
+    activeGroupId: string | null;
+    isGroupAdmin: boolean;
 }
 
-const VenueManager: React.FC<VenueManagerProps> = ({ user }) => {
+const VenueManager: React.FC<VenueManagerProps> = ({ user, activeGroupId, isGroupAdmin }) => {
     const [venues, setVenues] = useState<Venue[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -17,11 +19,12 @@ const VenueManager: React.FC<VenueManagerProps> = ({ user }) => {
     const [location, setLocation] = useState('');
     const [courtCount, setCourtCount] = useState(1);
 
-    const isAdmin = user.role === 'ADMIN';
+    const isSystemAdmin = user.systemRole === 'ADMIN';
+    const canManageVenues = isSystemAdmin || isGroupAdmin;
 
     useEffect(() => {
         loadVenues();
-    }, []);
+    }, [activeGroupId]);
 
     const loadVenues = async () => {
         try {
@@ -44,14 +47,14 @@ const VenueManager: React.FC<VenueManagerProps> = ({ user }) => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!isAdmin) return;
+        if (!canManageVenues) return;
 
         try {
             if (editingId) {
                 const updated = await venuesApi.update(editingId, { name, location, courtCount });
                 setVenues(prev => prev.map(v => v.id === editingId ? updated : v));
             } else {
-                const created = await venuesApi.create({ name, location, courtCount });
+                const created = await venuesApi.create({ name, location, courtCount }, activeGroupId || undefined);
                 setVenues(prev => [...prev, created]);
             }
             resetForm();
@@ -90,7 +93,7 @@ const VenueManager: React.FC<VenueManagerProps> = ({ user }) => {
             )}
 
             {/* Admin Form */}
-            {isAdmin && (
+            {canManageVenues && (
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
                     <h2 className="text-xl font-bold mb-4 text-slate-900 dark:text-white">{editingId ? 'Edit Venue' : 'Add New Venue'}</h2>
                     <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4 items-end">
@@ -158,7 +161,7 @@ const VenueManager: React.FC<VenueManagerProps> = ({ user }) => {
                             </div>
                         </div>
 
-                        {isAdmin && (
+                        {canManageVenues && (
                             <div className="flex justify-end gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button onClick={() => handleEdit(venue)} className="text-blue-500 hover:text-blue-600 text-sm font-bold">Edit</button>
                                 <button onClick={() => handleDelete(venue.id)} className="text-rose-500 hover:text-rose-600 text-sm font-bold">Delete</button>
@@ -169,7 +172,7 @@ const VenueManager: React.FC<VenueManagerProps> = ({ user }) => {
 
                 {venues.length === 0 && (
                     <div className="col-span-full text-center py-12 text-slate-400 italic">
-                        No venues found. {isAdmin ? 'Add one above!' : 'Ask an admin to add venues.'}
+                        No venues found. {canManageVenues ? 'Add one above!' : 'Ask an admin to add venues.'}
                     </div>
                 )}
             </div>

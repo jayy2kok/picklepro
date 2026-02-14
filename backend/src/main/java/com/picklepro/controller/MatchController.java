@@ -28,7 +28,7 @@ public class MatchController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('GROUP_ADMIN')")
     public ResponseEntity<MatchResponse> createMatch(@AuthenticationPrincipal User user,
             @Valid @RequestBody Match match) {
         MatchResponse created = matchService.createMatch(match, user.getId());
@@ -36,10 +36,10 @@ public class MatchController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('GROUP_ADMIN')")
     public ResponseEntity<Void> deleteMatch(@AuthenticationPrincipal User user,
             @PathVariable String id) {
-        matchService.deleteMatch(id, user.getId());
+        matchService.deleteMatch(id, user);
         return ResponseEntity.noContent().build();
     }
 }

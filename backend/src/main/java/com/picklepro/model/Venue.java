@@ -18,4 +18,7 @@ public class Venue {
     private String name;
     private String location;
     private int courtCount;
+
+    private String createdByUserId;
+    private String groupId;
 }

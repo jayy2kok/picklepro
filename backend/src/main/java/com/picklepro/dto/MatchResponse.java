@@ -21,4 +21,5 @@ public class MatchResponse {
     private String venueId;
     private Integer courtNumber;
     private String userId;
+    private String groupId;
 }
