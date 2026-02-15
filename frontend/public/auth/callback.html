@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PicklePro Auth</title>
+    <style>
+        body {
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: -apple-system, system-ui, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 16px;
+            border: 3px solid #1e293b;
+            border-top-color: #84cc16;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        a {
+            color: #84cc16;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" id="content">
+        <div class="spinner"></div>
+        <p>Redirecting to PicklePro...</p>
+    </div>
+    <script>
+        // OAuth callback bridge page.
+        // Google redirects here (HTTPS URL it accepts).
+        // This page forwards the auth response back to the app via deep link.
+        //
+        // The "return_scheme" query param tells us which scheme to redirect to:
+        //   - Expo Go development: exp://192.168.x.x:8081
+        //   - Standalone APK:      picklepro://
+        (function () {
+            // Collect all params from both hash fragment and query string
+            var hash = window.location.hash.substring(1);
+            var hashParams = new URLSearchParams(hash);
+            var queryParams = new URLSearchParams(window.location.search);
+
+            // The return_scheme was passed in the OAuth "state" parameter
+            var state = hashParams.get('state') || queryParams.get('state') || '';
+            var stateObj = {};
+            try { stateObj = JSON.parse(atob(state)); } catch (e) { }
+
+            var returnScheme = stateObj.returnScheme || 'picklepro://auth/callback';
+
+            // Remove state from forwarded params, keep everything else (id_token, etc.)
+            hashParams.delete('state');
+
+            // Build deep link: returnScheme?id_token=xxx&...
+            var separator = returnScheme.indexOf('?') >= 0 ? '&' : '?';
+            var deepLink = returnScheme + separator + hashParams.toString();
+
+            window.location.href = deepLink;
+
+            // Fallback after 3 seconds
+            setTimeout(function () {
+                document.getElementById('content').innerHTML =
+                    '<p>If the app didn\'t open automatically:</p>' +
+                    '<p><a href="' + deepLink + '">Tap here to open PicklePro</a></p>';
+            }, 3000);
+        })();
+    </script>
+</body>
+
+</html>
