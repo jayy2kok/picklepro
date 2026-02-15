@@ -67,8 +67,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const login = async () => {
         try {
             // Encode the app's return URI in the state parameter
-            // The callback page will read this and redirect to the app
-            const statePayload = btoa(JSON.stringify({ returnScheme: appReturnUri }));
+            // The callback page reads this and redirects to the app via intent:// URI
+            const statePayload = encodeURIComponent(JSON.stringify({ returnUri: appReturnUri }));
             const nonce = Math.random().toString(36).substring(2);
 
             const params = new URLSearchParams({

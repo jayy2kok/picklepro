@@ -19,6 +19,7 @@
 
         .container {
             text-align: center;
+            padding: 20px;
         }
 
         .spinner {
@@ -39,6 +40,15 @@
 
         a {
             color: #84cc16;
+            text-decoration: underline;
+            font-size: 16px;
+        }
+
+        .debug {
+            font-size: 10px;
+            color: #475569;
+            margin-top: 20px;
+            word-break: break-all;
         }
     </style>
 </head>
@@ -49,40 +59,54 @@
         <p>Redirecting to PicklePro...</p>
     </div>
     <script>
-        // OAuth callback bridge page.
-        // Google redirects here (HTTPS URL it accepts).
-        // This page forwards the auth response back to the app via deep link.
-        //
-        // The "return_scheme" query param tells us which scheme to redirect to:
-        //   - Expo Go development: exp://192.168.x.x:8081
-        //   - Standalone APK:      picklepro://
         (function () {
-            // Collect all params from both hash fragment and query string
+            // Collect params from hash fragment (Google implicit flow puts tokens here)
             var hash = window.location.hash.substring(1);
             var hashParams = new URLSearchParams(hash);
-            var queryParams = new URLSearchParams(window.location.search);
 
-            // The return_scheme was passed in the OAuth "state" parameter
-            var state = hashParams.get('state') || queryParams.get('state') || '';
-            var stateObj = {};
-            try { stateObj = JSON.parse(atob(state)); } catch (e) { }
+            // Extract return scheme from state parameter
+            var stateRaw = hashParams.get('state') || '';
+            var returnUri = 'picklepro://auth/callback'; // default for standalone APK
+            try {
+                var stateObj = JSON.parse(decodeURIComponent(stateRaw));
+                if (stateObj && stateObj.returnUri) {
+                    returnUri = stateObj.returnUri;
+                }
+            } catch (e) {
+                console.log('State decode failed, using default:', e);
+            }
 
-            var returnScheme = stateObj.returnScheme || 'picklepro://auth/callback';
-
-            // Remove state from forwarded params, keep everything else (id_token, etc.)
+            // Remove state from forwarded params
             hashParams.delete('state');
+            var tokenParams = hashParams.toString();
 
-            // Build deep link: returnScheme?id_token=xxx&...
-            var separator = returnScheme.indexOf('?') >= 0 ? '&' : '?';
-            var deepLink = returnScheme + separator + hashParams.toString();
+            // Build the deep link
+            var separator = returnUri.indexOf('?') >= 0 ? '&' : '?';
+            var deepLink = returnUri + separator + tokenParams;
 
-            window.location.href = deepLink;
+            // On Android, Chrome blocks direct custom-scheme:// navigation from HTTPS pages.
+            // Use Android's intent:// URI format which explicitly targets the app.
+            var isAndroid = /android/i.test(navigator.userAgent);
+
+            if (isAndroid && returnUri.startsWith('exp://')) {
+                // Extract host:port from exp://host:port
+                var expHost = returnUri.replace('exp://', '').split('/')[0];
+                var intentUri = 'intent://' + expHost + separator + tokenParams +
+                    '#Intent;scheme=exp;package=host.exp.exponent;end';
+                window.location.href = intentUri;
+            } else {
+                window.location.href = deepLink;
+            }
 
             // Fallback after 3 seconds
             setTimeout(function () {
                 document.getElementById('content').innerHTML =
-                    '<p>If the app didn\'t open automatically:</p>' +
-                    '<p><a href="' + deepLink + '">Tap here to open PicklePro</a></p>';
+                    '<p style="margin-bottom:16px">If the app didn\'t open automatically:</p>' +
+                    '<p><a href="' + deepLink + '">Tap here to open PicklePro</a></p>' +
+                    (isAndroid && returnUri.startsWith('exp://') ?
+                        '<p style="margin-top:12px"><a href="intent://' + returnUri.replace('exp://', '').split('/')[0] +
+                        separator + tokenParams + '#Intent;scheme=exp;package=host.exp.exponent;end">Or try this link for Expo Go</a></p>' : '') +
+                    '<p class="debug">Return URI: ' + returnUri + '</p>';
             }, 3000);
         })();
     </script>
