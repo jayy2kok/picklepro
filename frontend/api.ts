@@ -2,7 +2,8 @@ import { Player, Match, Venue, Group, Role } from './types';
 
 const API_URL = (() => {
     const url = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-    return url.startsWith('http') ? url : `https://${url}`;
+    // Remove trailing slash for consistency
+    return url.endsWith('/') ? url.slice(0, -1) : url;
 })();
 
 const getAuthHeaders = (): HeadersInit => {
