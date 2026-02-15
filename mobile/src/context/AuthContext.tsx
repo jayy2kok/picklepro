@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import Constants from 'expo-constants';
 import { User } from '../types';
 import { setToken, removeToken, getToken } from '../api';
@@ -32,9 +33,10 @@ const OAUTH_CALLBACK_URL = 'https://picklepro.duckdns.org/auth/callback.html';
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const authListenerRef = useRef<ReturnType<typeof Linking.addEventListener> | null>(null);
 
     // The URI the app listens for — varies by environment:
-    // - Expo Go:       exp://192.168.x.x:8081 (auto-detected)
+    // - Expo Go:        exp://192.168.x.x:8081/--/auth/callback
     // - Standalone APK: picklepro://auth/callback
     const appReturnUri = AuthSession.makeRedirectUri({ scheme: 'picklepro', path: 'auth/callback' });
 
@@ -66,8 +68,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const login = async () => {
         try {
-            // Encode the app's return URI in the state parameter
-            // The callback page reads this and redirects to the app via intent:// URI
             const statePayload = encodeURIComponent(JSON.stringify({ returnUri: appReturnUri }));
             const nonce = Math.random().toString(36).substring(2);
 
@@ -82,14 +82,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 
-            // Open browser for OAuth
-            // Flow: Google → callback page (HTTPS) → app deep link (exp:// or picklepro://)
-            // openAuthSessionAsync detects when browser navigates to appReturnUri prefix
-            const result = await WebBrowser.openAuthSessionAsync(authUrl, appReturnUri);
+            // Set up a deep link listener BEFORE opening the browser
+            // When the callback page's intent:// link is tapped, Expo Go receives
+            // the deep link and this handler fires
+            const linkPromise = new Promise<string | null>((resolve) => {
+                // Clean up any previous listener
+                if (authListenerRef.current) {
+                    authListenerRef.current.remove();
+                }
 
-            if (result.type === 'success' && result.url) {
-                // Parse the returned URL to get the id_token
-                const returnUrl = result.url;
+                authListenerRef.current = Linking.addEventListener('url', (event) => {
+                    console.log('Deep link received:', event.url);
+                    authListenerRef.current?.remove();
+                    authListenerRef.current = null;
+                    resolve(event.url);
+                });
+
+                // Timeout after 5 minutes
+                setTimeout(() => {
+                    authListenerRef.current?.remove();
+                    authListenerRef.current = null;
+                    resolve(null);
+                }, 300000);
+            });
+
+            // Open browser — don't await, we'll detect return via Linking
+            WebBrowser.openAuthSessionAsync(authUrl, appReturnUri).catch(() => { });
+
+            // Wait for the deep link from the callback page
+            const returnUrl = await linkPromise;
+
+            // Close the browser tab
+            try { WebBrowser.dismissBrowser(); } catch (e) { /* ignore */ }
+
+            if (returnUrl) {
+                // Parse the URL to extract id_token
                 const queryString = returnUrl.split('?')[1] || '';
                 const urlParams = new URLSearchParams(queryString);
                 const idToken = urlParams.get('id_token');
@@ -97,7 +124,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (idToken) {
                     await authenticateWithBackend(idToken);
                 } else {
-                    console.error('No id_token in return URL:', returnUrl);
+                    console.error('No id_token in return URL');
                 }
             }
         } catch (err) {

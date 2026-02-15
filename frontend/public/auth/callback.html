@@ -4,8 +4,14 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>PicklePro Auth</title>
+    <title>PicklePro - Sign In Complete</title>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             background: #0f172a;
             color: #e2e8f0;
@@ -14,40 +20,61 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            margin: 0;
         }
 
         .container {
             text-align: center;
-            padding: 20px;
+            padding: 32px 24px;
+            max-width: 360px;
         }
 
-        .spinner {
-            width: 40px;
-            height: 40px;
-            margin: 0 auto 16px;
-            border: 3px solid #1e293b;
-            border-top-color: #84cc16;
+        .checkmark {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 20px;
+            background: #84cc16;
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: #0f172a;
         }
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+        h1 {
+            font-size: 22px;
+            margin-bottom: 8px;
         }
 
-        a {
-            color: #84cc16;
-            text-decoration: underline;
-            font-size: 16px;
+        .subtitle {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 28px;
+        }
+
+        .open-btn {
+            display: block;
+            width: 100%;
+            padding: 16px 24px;
+            background: #84cc16;
+            color: #0f172a;
+            font-size: 17px;
+            font-weight: 700;
+            border: none;
+            border-radius: 12px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .open-btn:active {
+            background: #65a30d;
         }
 
         .debug {
             font-size: 10px;
-            color: #475569;
-            margin-top: 20px;
+            color: #334155;
+            margin-top: 24px;
             word-break: break-all;
         }
     </style>
@@ -55,59 +82,52 @@
 
 <body>
     <div class="container" id="content">
-        <div class="spinner"></div>
-        <p>Redirecting to PicklePro...</p>
+        <div class="checkmark">✓</div>
+        <h1>Sign In Successful!</h1>
+        <p class="subtitle">Tap the button below to return to the app</p>
+        <div id="button-container"></div>
+        <p class="debug" id="debug"></p>
     </div>
     <script>
         (function () {
-            // Collect params from hash fragment (Google implicit flow puts tokens here)
+            // Collect params from hash fragment (Google implicit flow)
             var hash = window.location.hash.substring(1);
             var hashParams = new URLSearchParams(hash);
 
-            // Extract return scheme from state parameter
+            // Extract return URI from state parameter
             var stateRaw = hashParams.get('state') || '';
-            var returnUri = 'picklepro://auth/callback'; // default for standalone APK
+            var returnUri = 'picklepro://auth/callback';
             try {
                 var stateObj = JSON.parse(decodeURIComponent(stateRaw));
                 if (stateObj && stateObj.returnUri) {
                     returnUri = stateObj.returnUri;
                 }
-            } catch (e) {
-                console.log('State decode failed, using default:', e);
-            }
+            } catch (e) { /* use default */ }
 
-            // Remove state from forwarded params
+            // Remove state, keep auth params (id_token etc.)
             hashParams.delete('state');
             var tokenParams = hashParams.toString();
 
             // Build the deep link
-            var separator = returnUri.indexOf('?') >= 0 ? '&' : '?';
-            var deepLink = returnUri + separator + tokenParams;
+            var sep = returnUri.indexOf('?') >= 0 ? '&' : '?';
+            var deepLink = returnUri + sep + tokenParams;
 
-            // On Android, Chrome blocks direct custom-scheme:// navigation from HTTPS pages.
-            // Use Android's intent:// URI format which explicitly targets the app.
+            // On Android, Chrome only allows intent:// from user clicks
             var isAndroid = /android/i.test(navigator.userAgent);
+            var btnContainer = document.getElementById('button-container');
+            var linkHref;
 
             if (isAndroid && returnUri.startsWith('exp://')) {
-                // Extract host:port from exp://host:port
-                var expHost = returnUri.replace('exp://', '').split('/')[0];
-                var intentUri = 'intent://' + expHost + separator + tokenParams +
+                // Build intent:// URI targeting Expo Go
+                var expPath = returnUri.replace('exp://', '');
+                linkHref = 'intent://' + expPath + sep + tokenParams +
                     '#Intent;scheme=exp;package=host.exp.exponent;end';
-                window.location.href = intentUri;
             } else {
-                window.location.href = deepLink;
+                linkHref = deepLink;
             }
 
-            // Fallback after 3 seconds
-            setTimeout(function () {
-                document.getElementById('content').innerHTML =
-                    '<p style="margin-bottom:16px">If the app didn\'t open automatically:</p>' +
-                    '<p><a href="' + deepLink + '">Tap here to open PicklePro</a></p>' +
-                    (isAndroid && returnUri.startsWith('exp://') ?
-                        '<p style="margin-top:12px"><a href="intent://' + returnUri.replace('exp://', '').split('/')[0] +
-                        separator + tokenParams + '#Intent;scheme=exp;package=host.exp.exponent;end">Or try this link for Expo Go</a></p>' : '') +
-                    '<p class="debug">Return URI: ' + returnUri + '</p>';
-            }, 3000);
+            btnContainer.innerHTML = '<a class="open-btn" href="' + linkHref + '">Open PicklePro</a>';
+            document.getElementById('debug').textContent = 'Scheme: ' + returnUri.split('://')[0] + '://';
         })();
     </script>
 </body>
