@@ -49,6 +49,13 @@ public class AuthService {
             }
 
             GoogleIdToken.Payload payload = googleIdToken.getPayload();
+
+            // Fix: implicit flow can return email_verified as String instead of Boolean
+            Object emailVerified = payload.get("email_verified");
+            if (emailVerified instanceof String) {
+                payload.set("email_verified", Boolean.parseBoolean((String) emailVerified));
+            }
+
             String googleId = payload.getSubject();
             String email = payload.getEmail();
             String name = (String) payload.get("name");

@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "PicklePro",
+    "slug": "picklepro",
+    "version": "1.0.0",
+    "scheme": "picklepro",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f172a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.picklepro.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0f172a"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.picklepro.app"
+    },
+    "extra": {
+      "apiUrl": "https://picklepro.duckdns.org/api",
+      "googleClientId": "552731508172-isfj7ok6bf8stgsi68c9t6e4jongr2ct.apps.googleusercontent.com",
+      "versionCheckUrl": "https://picklepro.duckdns.org/app-version.json"
+    }
+  }
+}
