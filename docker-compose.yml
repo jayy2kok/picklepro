@@ -11,9 +11,9 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - ADMIN_EMAILS=${ADMIN_EMAILS}
       - CORS_ORIGINS=${CORS_ORIGINS}
-    # depends_on:
-    #   mongo:
-    #     condition: service_healthy
+    depends_on:
+      mongo:
+        condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
       interval: 30s
@@ -34,21 +34,21 @@ services:
       - backend
     networks:
       - picklepro-network
-  # mongo:
-  #   image: mongo:7
-  #   container_name: picklepro-mongo
-  #   ports:
-  #     - "27017:27017"
-  #   volumes:
-  #     - mongo-data:/data/db
-  #   healthcheck:
-  #     test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #     start_period: 10s
-  #   networks:
-  #     - picklepro-network
+  mongo:
+    image: mongo:7
+    container_name: picklepro-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - picklepro-network
 
 volumes:
   mongo-data:

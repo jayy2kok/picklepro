@@ -41,6 +41,10 @@ backend/logs/
 docker-compose.override.yml
 .docker-volumes/
 
+# SSH Deploy Keys
+oci_deploy_key
+oci_deploy_key.pub
+
 # OS Files
 .DS_Store
 Thumbs.db
