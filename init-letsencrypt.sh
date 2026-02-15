@@ -40,7 +40,7 @@ echo "[4/4] Requesting Let's Encrypt certificate..."
 rm -rf ./certbot/conf/live/$DOMAIN
 
 # Request the real one
-docker compose -f $COMPOSE_FILE run --rm --entrypoint "" certbot certonly \
+docker compose -f $COMPOSE_FILE run --rm --entrypoint "certbot" certbot certonly \
   --webroot \
   --webroot-path=/var/www/certbot \
   --email $EMAIL \
